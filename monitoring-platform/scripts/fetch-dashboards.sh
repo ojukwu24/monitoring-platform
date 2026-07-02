@@ -23,6 +23,13 @@ for entry in "${DASHBOARDS[@]}"; do
     "https://grafana.com/api/dashboards/$id/revisions/latest/download" \
     -o "$DEST/$file"
 done
-echo "Done. NOTE: some community dashboards use a \${DS_PROMETHEUS} datasource"
-echo "input — if a panel shows 'datasource not found', open the dashboard once"
-echo "and select the Prometheus datasource, or map the input in the JSON."
+# Patch for zero-click provisioning (bind datasource UIDs, drop __inputs).
+if command -v python3 >/dev/null; then
+  python3 scripts/patch-dashboards.py
+elif command -v python >/dev/null; then
+  python scripts/patch-dashboards.py
+else
+  echo "WARN: python not found — dashboards NOT patched. They may prompt for a"
+  echo "datasource on first open. Run scripts/patch-dashboards.py on a machine"
+  echo "with Python 3 and commit the result."
+fi
