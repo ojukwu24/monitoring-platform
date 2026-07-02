@@ -1,0 +1,4 @@
+# This repo is deployed on Linux VMs — keep LF endings so shell scripts run.
+* text=auto eol=lf
+*.sh text eol=lf
+*.alloy text eol=lf
