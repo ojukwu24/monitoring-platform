@@ -1,6 +1,7 @@
 # kube-state-metrics exposed from the cluster via NodePort (see k8s/).
-# Point at any cluster node IP : the NodePort. Edit per client.
-- targets:
-    - '10.0.0.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
-  labels:
-    job: kube-state-metrics
+# Empty by default — add your cluster's <node-ip>:<NodePort>, then reload Prometheus.
+#
+# - targets:
+#     - '10.0.0.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
+#   labels:
+#     job: kube-state-metrics
