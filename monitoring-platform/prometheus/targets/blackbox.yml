@@ -1,0 +1,6 @@
+# Endpoints to probe for uptime. Full URLs for http_2xx module. Edit per client.
+- targets:
+    - 'https://client-website.example.com'
+    - 'https://api.client.example.com/health'
+  labels:
+    job: blackbox

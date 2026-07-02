@@ -1,0 +1,7 @@
+# Windows hosts running windows_exporter (port 9182). Edit per client.
+- targets:
+    - '10.0.0.21:9182'   # win-host-1
+    - '10.0.0.22:9182'   # win-host-2
+  labels:
+    job: windows
+    os: windows

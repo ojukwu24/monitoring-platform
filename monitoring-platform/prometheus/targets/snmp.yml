@@ -1,0 +1,7 @@
+# SNMP-enabled network devices. The address is the device IP (no port);
+# Prometheus relabels it into the snmp-exporter multi-target call. Edit per client.
+- targets:
+    - '10.0.0.1'    # core-switch
+    - '10.0.0.2'    # firewall
+  labels:
+    job: snmp

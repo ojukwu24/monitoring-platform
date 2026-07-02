@@ -1,0 +1,7 @@
+# Linux hosts running node_exporter (port 9100). Edit per client.
+- targets:
+    - '10.0.0.11:9100'   # linux-host-1
+    - '10.0.0.12:9100'   # linux-host-2
+  labels:
+    job: node
+    os: linux

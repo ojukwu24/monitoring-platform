@@ -1,0 +1,31 @@
+// Grafana Alloy — installed on each monitored HOST (not the monitoring VM).
+// Ships logs to the central Loki. Set LOKI_URL and TENANT as env vars on the host:
+//   LOKI_URL=http://<monitoring-vm>:3100/loki/api/v1/push
+//   TENANT=acme
+// Linux: tails /var/log/*.log. For Windows Event Log, see the windowsevent block below.
+
+local.file_match "system" {
+  path_targets = [{"__path__" = "/var/log/*.log", "job" = "varlogs"}]
+}
+
+loki.source.file "system" {
+  targets    = local.file_match.system.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+// Windows hosts: comment out the file block above and use this instead.
+// loki.source.windowsevent "app" {
+//   eventlog_name = "Application"
+//   use_incoming_timestamp = true
+//   forward_to = [loki.write.default.receiver]
+// }
+
+loki.write "default" {
+  endpoint {
+    url = env("LOKI_URL")
+  }
+  external_labels = {
+    tenant = env("TENANT"),
+    host   = constants.hostname,
+  }
+}
