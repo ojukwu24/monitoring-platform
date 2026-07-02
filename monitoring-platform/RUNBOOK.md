@@ -52,9 +52,10 @@ migration, not a rewrite.
 
 ## Common issues
 
-- **Grafana panel: "datasource not found"** — a community dashboard's
-  `${DS_PROMETHEUS}` input; open the dashboard once and select the Prometheus
-  datasource.
+- **Grafana panel: "datasource not found"** — the bundled dashboards are
+  pre-patched to bind the `prometheus`/`loki` datasource UIDs (zero-click). If
+  you add a NEW community dashboard, run `scripts/patch-dashboards.py` (or just
+  re-run `scripts/fetch-dashboards.sh`) to bind it too.
 - **alertmanager won't start** — `alertmanager.yml` not rendered; run
   `scripts/deploy.sh` (needs `envsubst` from the `gettext` package).
 - **snmp/blackbox target shows down** — check reachability and, for SNMP, the
