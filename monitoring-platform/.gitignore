@@ -1,0 +1,3 @@
+# Per-client secrets and rendered config — never commit
+.env
+alertmanager/alertmanager.yml

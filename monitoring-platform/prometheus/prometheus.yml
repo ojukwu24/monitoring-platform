@@ -1,0 +1,65 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    # Expanded from the TENANT env var via --enable-feature=expand-external-labels.
+    # Applied to all metrics on export/remote_write — the migration path to Mimir.
+    tenant: ${TENANT}
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # File-based service discovery for direct targets (node, windows, mongodb,
+  # kubernetes). Files are listed explicitly — NOT globbed — so the SNMP and
+  # blackbox target files, which need their own multi-target jobs below, are
+  # not also scraped here as plain targets.
+  - job_name: file_sd
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/node.yml
+          - /etc/prometheus/targets/windows.yml
+          - /etc/prometheus/targets/mongodb.yml
+          - /etc/prometheus/targets/kubernetes.yml
+
+  # SNMP: multi-target exporter pattern. Prometheus passes each device as
+  # ?target= to snmp-exporter, which does the SNMP walk.
+  - job_name: snmp
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/snmp.yml
+    metrics_path: /snmp
+    params:
+      module: [if_mib]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116
+
+  # Blackbox: uptime/synthetic probes, also multi-target.
+  - job_name: blackbox
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/blackbox.yml
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
