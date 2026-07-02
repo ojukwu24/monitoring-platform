@@ -55,14 +55,29 @@ services:
       - prometheus
       - loki
 
+  # Opt-in: only starts when the `mongodb` profile is enabled
+  # (COMPOSE_PROFILES=mongodb in .env, or `docker compose --profile mongodb up`).
   mongodb-exporter:
     image: percona/mongodb_exporter:${MONGODB_EXPORTER_VERSION}
     restart: unless-stopped
+    profiles: [mongodb]
     command:
       - --mongodb.uri=${MONGODB_URI}
       - --collect-all
     ports:
       - "9216:9216"
+
+  # SQL Server monitoring via the community sql_exporter.
+  # Config (with the DSN secret) is rendered from mssql/sql_exporter.yml.tmpl by deploy.sh.
+  mssql-exporter:
+    image: burningalchemist/sql_exporter:${MSSQL_EXPORTER_VERSION}
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/sql_exporter/sql_exporter.yml
+    volumes:
+      - ./mssql:/etc/sql_exporter
+    ports:
+      - "9399:9399"
 
   snmp-exporter:
     image: prom/snmp-exporter:${SNMP_EXPORTER_VERSION}

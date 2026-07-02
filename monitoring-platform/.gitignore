@@ -1,3 +1,4 @@
 # Per-client secrets and rendered config — never commit
 .env
 alertmanager/alertmanager.yml
+mssql/sql_exporter.yml

@@ -11,7 +11,17 @@ Operational guide for a per-client monitoring VM (Approach B).
 4. Deploy the exporters/agents on the client's hosts:
    - Linux hosts: install `node_exporter` (port 9100).
    - Windows hosts: install `windows_exporter` MSI (port 9182).
-   - MongoDB: create a `clusterMonitor` user, put the URI in `.env`.
+   - SQL Server: create a monitoring login and set `MSSQL_DSN` in `.env`
+     (single-quoted). Grant the login server-state visibility:
+     ```sql
+     CREATE LOGIN mon_user WITH PASSWORD = 'StrongPass!';
+     CREATE USER mon_user FOR LOGIN mon_user;
+     GRANT VIEW SERVER STATE TO mon_user;   -- perf counters / DMVs
+     GRANT VIEW ANY DEFINITION TO mon_user; -- optional, richer metadata
+     ```
+   - MongoDB (opt-in, off by default): set `COMPOSE_PROFILES=mongodb` and
+     `MONGODB_URI` in `.env`, add `targets/mongodb.yml` back into
+     `prometheus/prometheus.yml`, and create a `clusterMonitor` Mongo user.
    - Kubernetes: follow `k8s/kube-state-metrics-install.md`.
    - Network gear: enable SNMP; set the community string in `snmp/snmp.yml`.
    - Logs: install Grafana Alloy on hosts (see `alloy/README-install.md`).

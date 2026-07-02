@@ -1,0 +1,74 @@
+# Standard SQL Server metrics for the community sql_exporter.
+# The monitoring login needs: CONNECT + VIEW SERVER STATE (see RUNBOOK.md).
+collector_name: mssql_standard
+
+metrics:
+  - metric_name: mssql_up
+    type: gauge
+    help: 'SQL Server reachable (1 = up).'
+    values: [mssql_up]
+    query: |
+      SELECT 1 AS mssql_up
+
+  - metric_name: mssql_connections
+    type: gauge
+    help: 'Active user connections per database.'
+    key_labels: [database]
+    values: [count]
+    query: |
+      SELECT DB_NAME(database_id) AS [database], COUNT(*) AS count
+      FROM sys.dm_exec_sessions
+      WHERE is_user_process = 1
+      GROUP BY database_id
+
+  - metric_name: mssql_batch_requests_total
+    type: counter
+    help: 'Total T-SQL batch requests (Batch Requests/sec cumulative counter).'
+    values: [value]
+    query: |
+      SELECT cntr_value AS value
+      FROM sys.dm_os_performance_counters
+      WHERE counter_name = 'Batch Requests/sec'
+
+  - metric_name: mssql_deadlocks_total
+    type: counter
+    help: 'Total deadlocks.'
+    values: [value]
+    query: |
+      SELECT cntr_value AS value
+      FROM sys.dm_os_performance_counters
+      WHERE counter_name = 'Number of Deadlocks/sec'
+        AND instance_name = '_Total'
+
+  - metric_name: mssql_page_life_expectancy
+    type: gauge
+    help: 'Buffer Manager page life expectancy in seconds.'
+    values: [value]
+    query: |
+      SELECT cntr_value AS value
+      FROM sys.dm_os_performance_counters
+      WHERE counter_name = 'Page life expectancy'
+        AND object_name LIKE '%Buffer Manager%'
+
+  - metric_name: mssql_buffer_cache_hit_ratio
+    type: gauge
+    help: 'Buffer cache hit ratio as a percentage.'
+    values: [value]
+    query: |
+      SELECT (CAST(a.cntr_value AS FLOAT) / NULLIF(b.cntr_value, 0)) * 100 AS value
+      FROM sys.dm_os_performance_counters a
+      JOIN sys.dm_os_performance_counters b
+        ON a.object_name = b.object_name
+      WHERE a.counter_name = 'Buffer cache hit ratio'
+        AND b.counter_name = 'Buffer cache hit ratio base'
+
+  - metric_name: mssql_database_size_megabytes
+    type: gauge
+    help: 'Total allocated size per database in MB.'
+    key_labels: [database]
+    values: [size_mb]
+    query: |
+      SELECT DB_NAME(database_id) AS [database],
+             CAST(SUM(size) * 8.0 / 1024 AS DECIMAL(18,2)) AS size_mb
+      FROM sys.master_files
+      GROUP BY database_id

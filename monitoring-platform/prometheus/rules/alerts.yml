@@ -49,6 +49,33 @@ groups:
         annotations:
           summary: "MongoDB exporter cannot reach MongoDB ({{ $labels.instance }})"
 
+  - name: mssql
+    rules:
+      - alert: MSSQLDown
+        expr: mssql_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SQL Server unreachable via sql_exporter ({{ $labels.instance }})"
+
+      - alert: MSSQLLowPageLifeExpectancy
+        # <300s is a common (rough) memory-pressure heuristic; tune per workload.
+        expr: mssql_page_life_expectancy < 300
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SQL Server page life expectancy low ({{ $value }}s) on {{ $labels.instance }}"
+
+      - alert: MSSQLLowBufferCacheHitRatio
+        expr: mssql_buffer_cache_hit_ratio < 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SQL Server buffer cache hit ratio {{ $value }}% on {{ $labels.instance }}"
+
   - name: endpoints
     rules:
       - alert: EndpointDown

@@ -1,0 +1,6 @@
+# sql_exporter runs as a compose service; Prometheus scrapes it here.
+# The DSN (which host it connects to) is set via MSSQL_DSN in .env.
+- targets:
+    - 'mssql-exporter:9399'
+  labels:
+    job: mssql

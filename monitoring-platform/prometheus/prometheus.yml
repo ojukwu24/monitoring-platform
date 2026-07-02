@@ -28,8 +28,10 @@ scrape_configs:
       - files:
           - /etc/prometheus/targets/node.yml
           - /etc/prometheus/targets/windows.yml
-          - /etc/prometheus/targets/mongodb.yml
+          - /etc/prometheus/targets/mssql.yml
           - /etc/prometheus/targets/kubernetes.yml
+          # MongoDB is opt-in — enable the `mongodb` compose profile and add
+          # /etc/prometheus/targets/mongodb.yml here to scrape it.
 
   # SNMP: multi-target exporter pattern. Prometheus passes each device as
   # ?target= to snmp-exporter, which does the SNMP walk.

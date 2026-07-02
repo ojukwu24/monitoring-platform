@@ -14,6 +14,11 @@ command -v envsubst >/dev/null || { echo "ERROR: envsubst not found (install get
 envsubst < alertmanager/alertmanager.yml.tmpl > alertmanager/alertmanager.yml
 echo "Rendered alertmanager/alertmanager.yml"
 
+# Render sql_exporter config (contains the MSSQL DSN secret). Only ${MSSQL_DSN}
+# is substituted so T-SQL/YAML in the collector files is left untouched.
+envsubst '${MSSQL_DSN}' < mssql/sql_exporter.yml.tmpl > mssql/sql_exporter.yml
+echo "Rendered mssql/sql_exporter.yml"
+
 # Fetch dashboards (idempotent).
 bash scripts/fetch-dashboards.sh
 

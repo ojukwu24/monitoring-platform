@@ -21,7 +21,7 @@ svc "loki ready"         "http://localhost:3100/ready"
 echo "== targets (only meaningful once real hosts are configured) =="
 query "node up"              'up%7Bjob%3D%22node%22%7D'
 query "windows up"           'up%7Bjob%3D%22windows%22%7D'
-query "mongodb up"           'mongodb_up'
+query "mssql up"             'mssql_up'
 query "kube-state-metrics up" 'up%7Bjob%3D%22kube-state-metrics%22%7D'
 query "snmp up"              'up%7Bjob%3D%22snmp%22%7D'
 query "blackbox probe"       'probe_success'
