@@ -43,6 +43,9 @@ bash scripts/smoke-test.sh # acceptance check
 
 Then browse Grafana at `http://<vm>:3000`.
 
+New to this? Follow the beginner [RUNBOOK.md](RUNBOOK.md). Done it before and just want
+the commands? See [QUICKSTART.md](QUICKSTART.md).
+
 ## Requirements
 
 - Docker + Docker Compose on the VM.

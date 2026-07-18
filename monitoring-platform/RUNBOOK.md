@@ -142,18 +142,85 @@ list of addresses) and tell Prometheus to re-read it.
 | Network switch/firewall | `prometheus/targets/snmp.yml` | enable SNMP on the device; set the community in `snmp/snmp.yml` |
 | Kubernetes cluster | `prometheus/targets/kubernetes.yml` | follow `k8s/kube-state-metrics-install.md` |
 
-**Example — adding one Linux server:**
-Open `prometheus/targets/node.yml` and change the commented example to:
-```yaml
-- targets:
-    - '192.168.1.20:9100'   # my-linux-box
-  labels:
-    job: node
-    os: linux
+Below is one recipe per type. In every case you finish with the same reload command:
+```bash
+curl -s -X POST http://localhost:9090/-/reload
 ```
-Then `curl -s -X POST http://localhost:9090/-/reload`. Done.
+Then confirm at **Prometheus → Status → Targets** in the browser.
 
-For **logs** from a machine, install Grafana Alloy on it — see `alloy/README-install.md`.
+### 5a. Linux server
+1. On that Linux box, install **node_exporter** (listens on port 9100) and open its
+   firewall to the monitoring VM only.
+2. Edit `prometheus/targets/node.yml`:
+   ```yaml
+   - targets:
+       - '192.168.1.20:9100'   # my-linux-box
+     labels:
+       job: node
+       os: linux
+   ```
+3. Reload. Dashboard: **Node Exporter Full**.
+
+### 5b. Windows server
+1. On that Windows server, install the **windows_exporter** MSI (listens on port 9182);
+   allow the monitoring VM through Windows Firewall.
+2. Edit `prometheus/targets/windows.yml`:
+   ```yaml
+   - targets:
+       - '192.168.1.30:9182'   # my-windows-server
+     labels:
+       job: windows
+       os: windows
+   ```
+3. Reload. Dashboard: **Windows Exporter**.
+
+### 5c. Website / URL is-it-up
+No install needed — the blackbox exporter is already running.
+1. Edit `prometheus/targets/blackbox.yml`:
+   ```yaml
+   - targets:
+       - 'https://myapp.example.com'
+       - 'https://api.example.com/health'
+     labels:
+       job: blackbox
+   ```
+2. Reload. Dashboard: **Blackbox Exporter**.
+
+### 5d. Network device (switch / firewall / router, via SNMP)
+1. On the device, **enable SNMP** and note its community string (often `public`).
+2. If the community is not `public`, set it in `snmp/snmp.yml` (the `community:` line),
+   then apply that config change with a restart:
+   `docker compose restart snmp-exporter`.
+3. Edit `prometheus/targets/snmp.yml` — **IP only, no port**:
+   ```yaml
+   - targets:
+       - '192.168.1.1'   # core-switch
+       - '192.168.1.2'   # firewall
+     labels:
+       job: snmp
+   ```
+4. Reload. Dashboard: **SNMP Exporter**.
+
+### 5e. Kubernetes cluster
+1. Deploy **kube-state-metrics** into the cluster and expose it on a NodePort —
+   full steps are in `k8s/kube-state-metrics-install.md`.
+2. Edit `prometheus/targets/kubernetes.yml` — any cluster node IP + the NodePort:
+   ```yaml
+   - targets:
+       - '192.168.1.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
+     labels:
+       job: kube-state-metrics
+   ```
+3. Reload. Dashboard: **Kubernetes**.
+
+### 5f. Logs from a machine (Linux or Windows)
+Logs use a small agent on the machine, not a target file.
+1. Install **Grafana Alloy** on the machine and point it at this VM's Loki —
+   full steps (Linux and Windows) are in `alloy/README-install.md`.
+2. No Prometheus reload needed. View logs in Grafana → **Explore** → pick **Loki**.
+
+### 5g. MongoDB (only if a future client has it)
+Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-a-future-client-has-it)**.
 
 ---
 
