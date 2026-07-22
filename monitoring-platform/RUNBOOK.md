@@ -24,6 +24,11 @@ The important idea: **Prometheus reaches OUT to the things it watches.** The ser
 being watched don't need to know about us. If one is missing or offline, Prometheus
 just notes "this one is down" and keeps going — **nothing crashes.**
 
+**You never install Grafana, Prometheus, Alertmanager, or Loki by hand.** They run as
+**Docker containers**. The only thing you install on the VM is Docker itself (plus git,
+curl, envsubst) — the setup script does that. Then `deploy.sh` downloads and starts all
+the monitoring programs automatically.
+
 ---
 
 ## 2. What you need before starting

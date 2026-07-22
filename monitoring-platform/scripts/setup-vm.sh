@@ -177,8 +177,11 @@ for pair in "Docker:have docker" "Docker Compose:docker compose version" \
 done
 
 echo
+echo "Note: Grafana, Prometheus, Alertmanager and Loki are NOT installed on the VM."
+echo "      They run as Docker containers — deploy.sh downloads and starts them for you."
+echo
 echo "Next steps:"
 echo "  cp .env.example .env      # set TENANT, GF_ADMIN_PASSWORD, MSSQL_DSN"
-echo "  bash scripts/deploy.sh    # start the stack"
+echo "  bash scripts/deploy.sh    # pulls Grafana/Prometheus/etc images and starts them"
 echo "  bash scripts/smoke-test.sh"
 [ "$HARD_FAIL" -eq 1 ] && exit 1 || exit 0
