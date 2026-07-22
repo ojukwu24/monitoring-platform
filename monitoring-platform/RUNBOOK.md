@@ -39,6 +39,10 @@ On the machine that will run the monitoring (the "monitoring VM" — Linux is ea
 You do **not** need Python on the VM. You do **not** need to install anything on the
 machines you're watching yet (that comes later, only for the ones you have).
 
+> **Shortcut:** once you've cloned the repo (Step 3.1 below), you can let the setup
+> script check the VM and install all of the above for you:
+> `bash scripts/setup-vm.sh` (or `--check-only` to just check).
+
 ---
 
 ## 3. 🧪 TEST DEPLOYMENT — SQL Server only (this is your current task)
@@ -54,6 +58,17 @@ Do these steps in order. Copy-paste each command.
 git clone <your-repo-url>
 cd monitoring-platform
 ```
+
+### Step 3.1b — Check the VM and install what's missing
+```bash
+bash scripts/setup-vm.sh
+```
+This checks CPU/RAM/disk and installs Docker, Compose, git, curl, and envsubst if any
+are missing (it asks first; add `--yes` to skip the prompt, or `--check-only` to just
+report and install nothing). **Expected:** it ends with
+`VERDICT: VM meets the minimum requirements.`
+If it just installed Docker, **log out and back in once** so you can run docker without
+sudo, then continue.
 
 ### Step 3.2 — Create your settings file
 ```bash

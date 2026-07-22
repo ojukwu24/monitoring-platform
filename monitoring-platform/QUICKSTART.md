@@ -7,6 +7,9 @@ Already read the [RUNBOOK](RUNBOOK.md) once? Here's just the sequence.
 git clone <your-repo-url>
 cd monitoring-platform
 
+# 1b. Check the VM and install Docker/git/curl/envsubst if missing
+bash scripts/setup-vm.sh                # or: bash scripts/setup-vm.sh --check-only
+
 # 2. Settings
 cp .env.example .env
 #    Edit .env — set at minimum:

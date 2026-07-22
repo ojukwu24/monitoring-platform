@@ -52,6 +52,10 @@ the commands? See [QUICKSTART.md](QUICKSTART.md).
 - `envsubst` (from the `gettext` package) for rendering the Alertmanager config.
 - Network reachability from the VM to each monitored target.
 
+Don't want to install those by hand? Run `bash scripts/setup-vm.sh` — it checks the
+VM's CPU/RAM/disk and installs Docker, Compose, git, curl, and envsubst if missing
+(`--check-only` just reports).
+
 ## Ports
 
 Grafana `3000`, Prometheus `9090`, Alertmanager `9093`, Loki `3100`,
