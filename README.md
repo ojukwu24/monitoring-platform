@@ -9,6 +9,12 @@ no forex.
 Designed to be deployed per client as **configuration-as-code**: every target and
 credential is a variable, so a new deployment is a scripted install, not a rebuild.
 
+![Grafana SQL Server dashboard — illustrative preview](docs/images/grafana-mssql-preview.svg)
+
+> *Illustrative preview of the bundled SQL Server dashboard.* To show a real
+> screenshot of your own deployment: open the dashboard in Grafana, take a PNG, save it
+> as `docs/images/grafana-mssql.png`, and change the image line above to point at it.
+
 ## Repository layout
 
 | Path | What's there |

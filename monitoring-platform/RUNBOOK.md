@@ -168,6 +168,20 @@ curl -s -X POST http://localhost:9090/-/reload
 ```
 Then confirm at **Prometheus → Status → Targets** in the browser.
 
+> **What "reload" means (and doesn't).** This is *not* a restart. It tells the
+> running Prometheus to re-read its config **in place** — **no downtime, no data loss,
+> no gap in monitoring**, done in a second. Everything already being watched keeps
+> running; Prometheus just starts scraping the new address too.
+>
+> **You often don't even need it.** The target files in `prometheus/targets/` are
+> auto-watched: if you only add/remove an IP **inside a file that already exists**,
+> Prometheus notices within a few seconds on its own. The reload is only *required*
+> when you change `prometheus.yml` itself (e.g. re-enabling MongoDB by adding its file
+> to the list). Running it anyway is always safe, so "edit → reload" is a fine habit.
+>
+> A full restart (`docker compose restart prometheus`) *would* cause a few-second
+> scraping gap — stored data still survives in the Docker volume — so prefer reload.
+
 ### 5a. Linux server
 1. On that Linux box, install **node_exporter** (listens on port 9100) and open its
    firewall to the monitoring VM only.

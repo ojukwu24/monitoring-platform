@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 600" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect width="1040" height="600" fill="#0b0c0e"/>
+
+  <!-- header -->
+  <rect width="1040" height="44" fill="#111217"/>
+  <circle cx="24" cy="22" r="7" fill="#f05a28"/>
+  <text x="40" y="27" fill="#d8d9da" font-size="16" font-weight="600">SQL Server (sql_exporter)</text>
+  <text x="1024" y="27" fill="#8e8e8e" font-size="12" text-anchor="end">Last 6 hours &#183; refresh 30s</text>
+
+  <!-- Row 0: three stat panels -->
+  <!-- SQL Server Up -->
+  <rect x="12" y="56" width="333" height="92" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="24" y="74" fill="#9fa7b3" font-size="11">SQL Server Up</text>
+  <text x="178" y="122" fill="#73bf69" font-size="34" font-weight="700" text-anchor="middle">UP</text>
+
+  <!-- Page Life Expectancy -->
+  <rect x="353" y="56" width="333" height="92" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="365" y="74" fill="#9fa7b3" font-size="11">Page Life Expectancy (s)</text>
+  <text x="519" y="120" fill="#73bf69" font-size="30" font-weight="700" text-anchor="middle">1,240 s</text>
+
+  <!-- Buffer cache hit ratio gauge -->
+  <rect x="694" y="56" width="334" height="92" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="706" y="74" fill="#9fa7b3" font-size="11">Buffer Cache Hit Ratio %</text>
+  <path d="M 806 132 A 46 46 0 1 1 954 132" fill="none" stroke="#2c3235" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 806 132 A 46 46 0 1 1 949 118" fill="none" stroke="#73bf69" stroke-width="9" stroke-linecap="round"/>
+  <text x="861" y="126" fill="#d8d9da" font-size="22" font-weight="700" text-anchor="middle">98%</text>
+
+  <!-- Row 1: two timeseries -->
+  <!-- Active connections -->
+  <rect x="12" y="156" width="504" height="196" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="24" y="176" fill="#9fa7b3" font-size="11">Active connections by database</text>
+  <line x1="24" y1="196" x2="24" y2="330" stroke="#2c3235"/>
+  <line x1="24" y1="330" x2="504" y2="330" stroke="#2c3235"/>
+  <polyline fill="none" stroke="#3274d9" stroke-width="2" points="30,300 100,290 170,296 240,270 310,278 380,255 450,262 500,250"/>
+  <polyline fill="none" stroke="#73bf69" stroke-width="2" points="30,315 100,312 170,305 240,308 310,300 380,304 450,296 500,298"/>
+  <polyline fill="none" stroke="#f2cc0c" stroke-width="2" points="30,322 100,318 170,320 240,314 310,316 380,310 450,312 500,306"/>
+  <text x="30" y="346" fill="#8e8e8e" font-size="10">AppDB</text>
+  <text x="90" y="346" fill="#8e8e8e" font-size="10">ReportDB</text>
+  <text x="160" y="346" fill="#8e8e8e" font-size="10">master</text>
+
+  <!-- Batch requests -->
+  <rect x="524" y="156" width="504" height="196" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="536" y="176" fill="#9fa7b3" font-size="11">Batch requests / sec</text>
+  <line x1="536" y1="196" x2="536" y2="330" stroke="#2c3235"/>
+  <line x1="536" y1="330" x2="1016" y2="330" stroke="#2c3235"/>
+  <polygon fill="#3274d9" fill-opacity="0.15" points="542,330 542,290 610,268 680,300 750,250 820,272 890,240 960,258 1012,246 1012,330"/>
+  <polyline fill="none" stroke="#3274d9" stroke-width="2" points="542,290 610,268 680,300 750,250 820,272 890,240 960,258 1012,246"/>
+
+  <!-- Row 2: deadlocks + table -->
+  <rect x="12" y="360" width="504" height="196" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="24" y="380" fill="#9fa7b3" font-size="11">Deadlocks / sec</text>
+  <line x1="24" y1="400" x2="24" y2="534" stroke="#2c3235"/>
+  <line x1="24" y1="534" x2="504" y2="534" stroke="#2c3235"/>
+  <polyline fill="none" stroke="#e02f44" stroke-width="2" points="30,528 100,528 170,520 240,528 310,526 380,528 450,522 500,528"/>
+
+  <!-- DB size table -->
+  <rect x="524" y="360" width="504" height="196" rx="3" fill="#181b1f" stroke="#2c3235"/>
+  <text x="536" y="380" fill="#9fa7b3" font-size="11">Database size (MB)</text>
+  <line x1="536" y1="392" x2="1016" y2="392" stroke="#2c3235"/>
+  <text x="540" y="408" fill="#8e8e8e" font-size="11">database</text>
+  <text x="1012" y="408" fill="#8e8e8e" font-size="11" text-anchor="end">size_mb</text>
+  <g fill="#d8d9da" font-size="12">
+    <text x="540" y="432">AppDB</text>       <text x="1012" y="432" text-anchor="end">18,432.00</text>
+    <text x="540" y="456">ReportDB</text>    <text x="1012" y="456" text-anchor="end">7,104.50</text>
+    <text x="540" y="480">msdb</text>        <text x="1012" y="480" text-anchor="end">640.00</text>
+    <text x="540" y="504">master</text>      <text x="1012" y="504" text-anchor="end">72.00</text>
+  </g>
+  <line x1="536" y1="420" x2="1016" y2="420" stroke="#23272e"/>
+  <line x1="536" y1="444" x2="1016" y2="444" stroke="#23272e"/>
+  <line x1="536" y1="468" x2="1016" y2="468" stroke="#23272e"/>
+  <line x1="536" y1="492" x2="1016" y2="492" stroke="#23272e"/>
+
+  <!-- honesty label -->
+  <text x="1024" y="580" fill="#5a5a5a" font-size="10" text-anchor="end" font-style="italic">Illustrative preview — replace with a screenshot of your live deployment</text>
+</svg>
