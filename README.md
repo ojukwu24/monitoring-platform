@@ -3,11 +3,11 @@
 A self-hosted, on-premises monitoring stack with Site24x7-like capabilities, built
 entirely on open-source software (Grafana + Prometheus + Alertmanager + Loki) and
 deployed **unmodified**. One VM watches your servers, databases, network gear,
-endpoints, Kubernetes, and logs — with alerting to email and chat. No SaaS bills,
-no forex.
+endpoints, Kubernetes, and logs — with alerting to email and chat. No SaaS
+subscription fees.
 
-Designed to be deployed per client as **configuration-as-code**: every target and
-credential is a variable, so a new deployment is a scripted install, not a rebuild.
+Deployed as **configuration-as-code**: every target and credential is a variable, so a
+new deployment is a scripted install, not a rebuild.
 
 > **Status:** Shared publicly for anyone to **use and adapt** (MIT). **Not accepting
 > external contributions at this time** — feel free to fork. See [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -25,8 +25,6 @@ credential is a variable, so a new deployment is a scripted install, not a rebui
 | [`monitoring-platform/`](monitoring-platform/) | The stack itself — Docker Compose, configs, dashboards, scripts |
 | [`monitoring-platform/QUICKSTART.md`](monitoring-platform/QUICKSTART.md) | The fastest path: get it running in a few commands |
 | [`monitoring-platform/RUNBOOK.md`](monitoring-platform/RUNBOOK.md) | Beginner-friendly playbook (deploy, add servers, troubleshoot) |
-| [`docs/superpowers/specs/`](docs/superpowers/specs/) | The design document |
-| [`docs/superpowers/plans/`](docs/superpowers/plans/) | The implementation plan |
 
 ## Get started
 

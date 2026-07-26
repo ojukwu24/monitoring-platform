@@ -1,2 +1,5 @@
 # Controller scratch / internal build log — not part of the deliverable
 .superpowers/
+
+# Design/plan docs kept local only (author's private design & business notes)
+docs/superpowers/

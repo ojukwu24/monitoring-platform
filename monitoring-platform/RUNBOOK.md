@@ -81,7 +81,7 @@ cp .env.example .env
 ```
 Now open `.env` in an editor (`nano .env`) and change **at least these**:
 
-- `TENANT` — a short name for this client, e.g. `acme` (it becomes a label on the data)
+- `TENANT` — a short name for this deployment, e.g. `acme` (it becomes a label on the data)
 - `GF_ADMIN_PASSWORD` — the password you'll use to log into Grafana
 - `MSSQL_DSN` — how to reach your SQL Server. Keep the **single quotes**. Example:
   ```
@@ -93,7 +93,7 @@ Leave everything else as-is for now. **Do not touch `COMPOSE_PROFILES`** — lea
 empty is what keeps MongoDB off.
 
 ### Step 3.3 — Create the SQL Server login (run this ON SQL Server, once)
-Ask your DBA to run this, or run it yourself in SSMS. It makes a read-only account
+Run this on the SQL Server (in SSMS), or ask your DBA. It makes a read-only account
 that can see performance data (it cannot change anything):
 ```sql
 CREATE LOGIN mon_user WITH PASSWORD = 'YourPass';
@@ -126,7 +126,7 @@ connections, and cache stats.
 
 ---
 
-## 4. Turning MongoDB ON later (only if a future client has it)
+## 4. Turning MongoDB ON later (only if you also run MongoDB)
 
 You don't need this for your test. When you *do* need MongoDB one day:
 
@@ -253,8 +253,8 @@ Logs use a small agent on the machine, not a target file.
    full steps (Linux and Windows) are in `alloy/README-install.md`.
 2. No Prometheus reload needed. View logs in Grafana → **Explore** → pick **Loki**.
 
-### 5g. MongoDB (only if a future client has it)
-Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-a-future-client-has-it)**.
+### 5g. MongoDB (only if you also run MongoDB)
+Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-run-mongodb)**.
 
 ---
 
@@ -330,10 +330,10 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 
 ## Multi-tenant note (for later, not for the test)
 
-Every metric already carries a `tenant` label, and logs carry it too. When you're
-ready to run one central platform for many clients, you point Prometheus'
-`remote_write` at Grafana Mimir using that `tenant` label as the tenant id — an
-upgrade, not a rebuild.
+Every metric already carries a `tenant` label, and logs carry it too. If you ever run
+one central platform serving several separate teams or environments, you point
+Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the tenant id
+— an upgrade, not a rebuild.
 
 ---
 
@@ -354,4 +354,4 @@ upgrade, not a rebuild.
 - **`.env`** — your private settings file (passwords, addresses). Never shared/committed.
 - **Reload** — telling Prometheus to re-read its target files without a full restart.
 - **Compose profile** — an on/off switch for optional parts (MongoDB is behind one).
-- **Tenant** — a client. Its name is stamped on all data as a label.
+- **Tenant** — a name for this deployment (a team, environment, or client). Stamped on all data as a label.
