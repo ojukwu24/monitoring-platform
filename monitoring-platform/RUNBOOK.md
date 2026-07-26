@@ -196,9 +196,13 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
 3. Reload. Dashboard: **Node Exporter Full**.
 
 ### 5b. Windows server
-1. On that Windows server, install the **windows_exporter** MSI (listens on port 9182);
-   allow the monitoring VM through Windows Firewall.
-2. Edit `prometheus/targets/windows.yml`:
+1. On that Windows server, install the **windows_exporter** MSI (listens on port 9182).
+2. **Open the firewall** — this is the #1 reason Windows shows "no data". On the
+   Windows host, in PowerShell as admin:
+   ```powershell
+   New-NetFirewallRule -DisplayName "windows_exporter" -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow
+   ```
+3. Edit `prometheus/targets/windows.yml`:
    ```yaml
    - targets:
        - '192.168.1.30:9182'   # my-windows-server
@@ -206,7 +210,13 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
        job: windows
        os: windows
    ```
-3. Reload. Dashboard: **Windows Exporter**.
+4. Reload. Verify the scrape works before opening the dashboard:
+   ```bash
+   curl -s 'http://localhost:9090/api/v1/query?query=up{job="windows"}'   # want "1"
+   ```
+5. Open dashboard **Windows Exporter**, and pick your host in the top-left **server**
+   dropdown (it fills in from the live data — if it's empty, the scrape isn't working;
+   see the troubleshooting entry below).
 
 ### 5c. Website / URL is-it-up
 No install needed — the blackbox exporter is already running.
@@ -313,6 +323,23 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 **Lots of `FAIL ... (no data)` in the smoke test**
 → Usually normal — those are things you haven't added yet (node, windows, snmp…).
   Only worry about the ones you actually configured.
+
+**Windows dashboard shows "No data" (every panel blank)**
+→ The dashboard's top-left **server** dropdown is filled from live Windows metrics; if
+  the scrape isn't working it's empty and all panels go blank. Diagnose in order:
+  1. `curl -s 'http://localhost:9090/api/v1/query?query=up{job="windows"}'` — want `"1"`.
+     If `"0"`/empty, Prometheus can't reach the exporter → steps 2–3.
+  2. From the VM: `curl -s http://<windows-ip>:9182/metrics | head`. Refused/timeout =
+     firewall or the exporter isn't running.
+  3. On the Windows host: is the service up (`Get-Service windows_exporter`) and is the
+     **firewall** open? →
+     `New-NetFirewallRule -DisplayName "windows_exporter" -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow`
+  4. If `up=1` but still blank: pick your host in the dashboard's **server** dropdown,
+     and check `windows_cpu_time_total` in Grafana → Explore.
+  5. If `/metrics` shows `wmi_*` names (not `windows_*`), you have the old *wmi_exporter*
+     — install current **windows_exporter** instead.
+  6. Reloaded Prometheus after editing `windows.yml`?
+     `curl -s -X POST http://localhost:9090/-/reload`
 
 **A container keeps restarting**
 → `docker compose logs <name>` (e.g. `mssql-exporter`) shows the reason.
