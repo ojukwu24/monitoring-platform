@@ -9,6 +9,9 @@ no forex.
 Designed to be deployed per client as **configuration-as-code**: every target and
 credential is a variable, so a new deployment is a scripted install, not a rebuild.
 
+> **Status:** Shared publicly for anyone to **use and adapt** (MIT). **Not accepting
+> external contributions at this time** — feel free to fork. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ![Grafana SQL Server dashboard — illustrative preview](docs/images/grafana-mssql-preview.svg)
 
 > *Illustrative preview of the bundled SQL Server dashboard.* To show a real
