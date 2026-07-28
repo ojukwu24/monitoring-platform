@@ -212,7 +212,8 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
    ```
 4. Reload. Verify the scrape works before opening the dashboard:
    ```bash
-   curl -s 'http://localhost:9090/api/v1/query?query=up{job="windows"}'   # want "1"
+   # -G --data-urlencode is required: {, } and " must be URL-encoded
+   curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="windows"}'   # want "1"
    ```
 5. Open dashboard **Windows Exporter**, and pick your host in the top-left **server**
    dropdown (it fills in from the live data — if it's empty, the scrape isn't working;
@@ -320,6 +321,11 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   3) Did you create the `mon_user` login with `VIEW SERVER STATE`?
   4) Read the exporter's own logs: `docker compose logs mssql-exporter`.
 
+**A curl query returns `bad_data ... parse error: unexpected "="`**
+→ The PromQL wasn't URL-encoded. Don't put `?query=up{job="windows"}` straight in the
+  URL — let curl encode it:
+  `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="windows"}'`
+
 **Lots of `FAIL ... (no data)` in the smoke test**
 → Usually normal — those are things you haven't added yet (node, windows, snmp…).
   Only worry about the ones you actually configured.
@@ -327,7 +333,9 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 **Windows dashboard shows "No data" (every panel blank)**
 → The dashboard's top-left **server** dropdown is filled from live Windows metrics; if
   the scrape isn't working it's empty and all panels go blank. Diagnose in order:
-  1. `curl -s 'http://localhost:9090/api/v1/query?query=up{job="windows"}'` — want `"1"`.
+  1. `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="windows"}'`
+     — want `"1"`. (Use `-G --data-urlencode`; a raw `?query=up{job="windows"}` fails with
+     a `bad_data` parse error because `{`, `}` and `"` must be URL-encoded.)
      If `"0"`/empty, Prometheus can't reach the exporter → steps 2–3.
   2. From the VM: `curl -s http://<windows-ip>:9182/metrics | head`. Refused/timeout =
      firewall or the exporter isn't running.
