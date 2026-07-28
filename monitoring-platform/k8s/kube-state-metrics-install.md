@@ -34,7 +34,7 @@ Reload Prometheus: `curl -s -X POST http://localhost:9090/-/reload`
 ## Verify
 
 ```bash
-curl -s 'http://localhost:9090/api/v1/query?query=up{job="kube-state-metrics"}'
+curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="kube-state-metrics"}'
 # expect value "1"
 curl -s 'http://localhost:9090/api/v1/query?query=kube_pod_info' | head
 ```
