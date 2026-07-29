@@ -39,7 +39,10 @@ bash scripts/deploy.sh     # renders secrets, fetches dashboards, brings stack u
 bash scripts/smoke-test.sh # acceptance check
 ```
 
-Then browse Grafana at `http://<vm>:3000`.
+Then browse Grafana at `http://<vm>:3000`. Start with **🚦 NOC Overview — All Systems**:
+one screen showing every monitored resource as green / amber / red, grouped into
+Servers, Kubernetes, Databases, and Endpoints & Network. Built for an office wall
+display (`/d/noc-overview/?kiosk` + F11).
 
 New to this? Follow the beginner [RUNBOOK.md](RUNBOOK.md). Done it before and just want
 the commands? See [QUICKSTART.md](QUICKSTART.md).

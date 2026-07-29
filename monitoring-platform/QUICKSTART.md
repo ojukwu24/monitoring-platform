@@ -38,6 +38,7 @@ bash scripts/smoke-test.sh
 
 # 6. Open Grafana
 #      http://<vm-ip>:3000   (admin / your password)
+#      Dashboards -> Monitoring -> 'NOC Overview' (everything, green/amber/red)
 #      Dashboards -> Monitoring -> SQL Server
 #      Use the "SQL Server" dropdown (top-left) to pick a server, or All to compare.
 ```

@@ -152,6 +152,48 @@ labelled with the server's name.
 
 ---
 
+## 3.7 The NOC Overview dashboard (the one for the office screen)
+
+**Dashboards → Monitoring → 🚦 NOC Overview — All Systems**
+
+This is the single "is everything OK?" screen, designed to be left running on a TV.
+It groups everything you monitor and colours it:
+
+| Colour | Meaning |
+|---|---|
+| 🟢 Green | Healthy |
+| 🟡 Amber | Warning — worth a look (e.g. CPU >75%, disk <15% free, cert <30 days) |
+| 🔴 Red | Broken — act now (target DOWN, critical alert, disk nearly full) |
+| — / grey | Nothing configured in that group yet (**not** a fault) |
+
+**What's on it, top to bottom:**
+- **Top strip (6 tiles):** Targets DOWN · CRITICAL alerts · Warnings · Servers UP ·
+  SQL Servers UP · Total targets. A glance here tells you if anything is wrong at all.
+- **🔥 Active Alerts:** a live table of what is firing right now, colour-coded by
+  severity. Empty table = everything is fine.
+- **🖥️ Servers:** one UP/DOWN tile per Linux/Windows host, plus CPU %, memory %, and
+  lowest free disk % bars for every server side by side.
+- **☸️ Kubernetes:** nodes ready / not ready, pods running, pods failed or pending,
+  containers restarting in the last 15 min.
+- **🗄️ Databases:** one UP/DOWN tile per SQL Server, plus page life expectancy,
+  buffer cache hit %, and active connections per server.
+- **🌐 Endpoints & Network:** website/endpoint UP/DOWN tiles, TLS certificate days
+  remaining, and SNMP network device status.
+
+**It grows by itself.** The tiles are driven by whatever Prometheus is scraping — add a
+server or a SQL Server and a new tile appears automatically. Nothing to edit here.
+
+**Put it on the office TV:**
+1. Open the dashboard, then add `?kiosk` to the URL to hide all menus, e.g.
+   `http://<vm-ip>:3000/d/noc-overview/?kiosk`
+2. Press **F11** for full screen. It refreshes every 30s on its own.
+3. To avoid logging in on the TV: in `.env` you can allow anonymous read-only viewing
+   by adding these to the `grafana` service environment in `docker-compose.yml`:
+   `GF_AUTH_ANONYMOUS_ENABLED=true` and `GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer`.
+   Only do this on a trusted internal network.
+
+---
+
 ## 4. Turning MongoDB ON later (only if you also run MongoDB)
 
 You don't need this for your test. When you *do* need MongoDB one day:

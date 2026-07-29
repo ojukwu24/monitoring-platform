@@ -1,121 +1,380 @@
 {
   "uid": "mssql-standard",
   "title": "SQL Server (sql_exporter)",
-  "tags": ["mssql", "database"],
+  "tags": [
+    "mssql",
+    "database"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 2,
   "refresh": "30s",
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "templating": {
     "list": [
       {
         "name": "server",
         "label": "SQL Server",
         "type": "query",
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
         "query": "label_values(mssql_up, instance)",
         "refresh": 1,
         "includeAll": true,
         "multi": true,
         "allValue": ".*",
-        "current": { "text": "All", "value": "$__all", "selected": true },
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
         "options": []
       }
     ]
   },
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "panels": [
     {
       "id": 1,
       "type": "stat",
       "title": "SQL Server Up",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "options": { "textMode": "value_and_name" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "textMode": "value_and_name"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
           ],
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
         }
       },
-      "targets": [ { "refId": "A", "expr": "mssql_up{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mssql_up{instance=~\"$server\"}",
+          "legendFormat": "{{instance}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 2,
       "type": "stat",
       "title": "Page Life Expectancy (s)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "options": { "textMode": "value_and_name" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "options": {
+        "textMode": "value_and_name"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 300 }, { "color": "green", "value": 1000 } ] }
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 300
+              },
+              {
+                "color": "green",
+                "value": 1000
+              }
+            ]
+          }
         }
       },
-      "targets": [ { "refId": "A", "expr": "mssql_page_life_expectancy{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mssql_page_life_expectancy{instance=~\"$server\"}",
+          "legendFormat": "{{instance}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 3,
       "type": "gauge",
       "title": "Buffer Cache Hit Ratio %",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent", "min": 0, "max": 100,
-          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 90 }, { "color": "green", "value": 95 } ] }
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          }
         }
       },
-      "targets": [ { "refId": "A", "expr": "mssql_buffer_cache_hit_ratio{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mssql_buffer_cache_hit_ratio{instance=~\"$server\"}",
+          "legendFormat": "{{instance}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 8,
       "type": "stat",
       "title": "Servers monitored",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "text", "value": null } ] } } },
-      "targets": [ { "refId": "A", "expr": "count(mssql_up{instance=~\"$server\"})", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(mssql_up{instance=~\"$server\"})",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 4,
       "type": "timeseries",
       "title": "Active connections by database",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "mssql_connections{instance=~\"$server\"}", "legendFormat": "{{instance}} / {{database}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mssql_connections{instance=~\"$server\"}",
+          "legendFormat": "{{instance}} / {{database}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 5,
       "type": "timeseries",
       "title": "Batch requests / sec",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "rate(mssql_batch_requests_total{instance=~\"$server\"}[5m])", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mssql_batch_requests_total{instance=~\"$server\"}[5m])",
+          "legendFormat": "{{instance}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 6,
       "type": "timeseries",
       "title": "Deadlocks / sec",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "rate(mssql_deadlocks_total{instance=~\"$server\"}[5m])", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mssql_deadlocks_total{instance=~\"$server\"}[5m])",
+          "legendFormat": "{{instance}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
       "id": 7,
       "type": "table",
       "title": "Database size (MB)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "fieldConfig": { "defaults": { "unit": "decmbytes" } },
-      "targets": [ { "refId": "A", "expr": "mssql_database_size_megabytes{instance=~\"$server\"}", "format": "table", "instant": true, "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mssql_database_size_megabytes{instance=~\"$server\"}",
+          "format": "table",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     }
   ]
 }
