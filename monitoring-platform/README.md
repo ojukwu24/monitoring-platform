@@ -33,6 +33,7 @@ rewrite.
 
 ```bash
 cp .env.example .env       # then edit: TENANT, passwords, MSSQL_DSN, SMTP, chat
+# monitoring several SQL Servers? cp mssql/servers.conf.example mssql/servers.conf
 # edit prometheus/targets/*.yml with your real host IPs
 bash scripts/deploy.sh     # renders secrets, fetches dashboards, brings stack up
 bash scripts/smoke-test.sh # acceptance check

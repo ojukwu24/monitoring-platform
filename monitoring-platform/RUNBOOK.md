@@ -92,7 +92,27 @@ Now open `.env` in an editor (`nano .env`) and change **at least these**:
 Leave everything else as-is for now. **Do not touch `COMPOSE_PROFILES`** — leaving it
 empty is what keeps MongoDB off.
 
-### Step 3.3 — Create the SQL Server login (run this ON SQL Server, once)
+> **Got more than one SQL Server?** Skip `MSSQL_DSN` and list them all in
+> `mssql/servers.conf` instead — one exporter covers any number of servers.
+> See **[Step 3.2b](#step-32b--optional-monitor-several-sql-servers)** below.
+
+### Step 3.2b — (optional) Monitor several SQL Servers
+
+Only if you have more than one. Otherwise skip to Step 3.3.
+
+```bash
+cp mssql/servers.conf.example mssql/servers.conf
+nano mssql/servers.conf
+```
+One server per line — `<name>  <DSN>`. The name is what you'll see in Grafana:
+```
+prod-sql-01  sqlserver://mon_user:Pass1@192.168.1.50:1433?database=master&encrypt=disable
+prod-sql-02  sqlserver://mon_user:Pass2@192.168.1.51:1433?database=master&encrypt=disable
+```
+If this file exists it is used and `MSSQL_DSN` is ignored. It contains passwords, so
+it is **git-ignored** — back it up separately.
+
+### Step 3.3 — Create the SQL Server login (run this ON SQL Server, once per server)
 Run this on the SQL Server (in SSMS), or ask your DBA. It makes a read-only account
 that can see performance data (it cannot change anything):
 ```sql
@@ -100,7 +120,9 @@ CREATE LOGIN mon_user WITH PASSWORD = 'YourPass';
 CREATE USER  mon_user FOR LOGIN mon_user;
 GRANT VIEW SERVER STATE TO mon_user;   -- lets it read performance counters
 ```
-Use the same username/password/host here as in your `MSSQL_DSN` above.
+Use the same username/password/host here as in your `MSSQL_DSN` (or `servers.conf`)
+above. **If you're monitoring several servers, run this on each one** — each server can
+have its own login and password.
 
 ### Step 3.4 — Start everything
 ```bash
@@ -121,6 +143,10 @@ yet, so there's simply nothing there. (See section 5 to add them later.)
 Open `http://<vm-ip>:3000` in a browser. Log in with `admin` and the password you set.
 Go to **Dashboards → Monitoring → SQL Server**. You should see your databases,
 connections, and cache stats.
+
+The **SQL Server** dropdown at the top lists every server you configured. Leave it on
+**All** to compare them side by side, or pick one to focus. Each line in the charts is
+labelled with the server's name.
 
 ✅ **That's a successful test.** Everything else in this guide is for growing it later.
 
@@ -347,11 +373,33 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 **`bash scripts/deploy.sh` says "copy .env.example to .env first"**
 → You skipped Step 3.2. Run `cp .env.example .env` and edit it.
 
-**SQL Server panel is empty / `smoke-test` shows `mssql up` FAIL**
-→ 1) Can the VM reach SQL Server? `nc -zv <sql-host> 1433`.
-  2) Is `MSSQL_DSN` correct AND single-quoted in `.env`?
-  3) Did you create the `mon_user` login with `VIEW SERVER STATE`?
-  4) Read the exporter's own logs: `docker compose logs mssql-exporter`.
+**SQL Server panels are empty / `smoke-test` shows `mssql up` FAIL**
+→ 1) Can the VM reach SQL Server? `nc -zv <sql-host> 1433` (firewall / port 1433).
+  2) Is the connection string right? `MSSQL_DSN` **single-quoted** in `.env`, or the
+     line in `mssql/servers.conf` (format: `<name>  <DSN>`, two fields).
+  3) Did you create the `mon_user` login with `VIEW SERVER STATE` **on that server**?
+  4) Read the exporter's own logs — it names the server that failed:
+     `docker compose logs mssql-exporter`
+  5) See exactly which servers the exporter is configured for:
+     `cat mssql/sql_exporter.yml` (generated — never edit it by hand;
+     edit `servers.conf` / `.env` then re-run `bash scripts/deploy.sh`).
+
+**Only SOME SQL Servers show data (others missing)**
+→ The exporter reports each server independently, so this is per-server, not global.
+  1) List what's actually reporting:
+     `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=mssql_up'`
+     — you get one result per server, each with its `instance` name. `1` = reachable,
+     `0` = configured but failing.
+  2) For a missing/`0` server, work through the 5 steps above **for that server only**
+     (network, DSN line, login/grant, exporter logs).
+  3) A typo in `servers.conf` (missing DSN, stray space in the name) makes that one line
+     fail while the rest work — re-run `bash scripts/deploy.sh` and read its output; it
+     prints the list of servers it loaded.
+
+**All SQL Servers show as `mssql-exporter:9399` instead of their names**
+→ The `honor_labels: true` setting on the `mssql` job in `prometheus/prometheus.yml` is
+  missing (it lets each server keep its own name). Restore it, then
+  `curl -s -X POST http://localhost:9090/-/reload`.
 
 **A curl query returns `bad_data ... parse error: unexpected "="`**
 → The PromQL wasn't URL-encoded. Don't put `?query=up{job="windows"}` straight in the
@@ -417,7 +465,12 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
 - **Target file** — a small list of targets in `prometheus/targets/`.
 - **Scrape** — Prometheus visiting a target to read its numbers.
 - **`up`** — a built-in number: `1` = target reachable, `0` = not reachable.
-- **DSN** — the "connection string" that says how to reach SQL Server.
+- **DSN** — the "connection string" that says how to reach SQL Server (host, port,
+  login, password).
+- **`servers.conf`** — your list of SQL Servers (`<name>  <DSN>`, one per line) in
+  `mssql/`. One exporter reads it and monitors them all. Holds passwords → git-ignored.
+- **`instance`** — the label identifying which server a metric came from (for SQL
+  Server it's the name you chose in `servers.conf`).
 - **`.env`** — your private settings file (passwords, addresses). Never shared/committed.
 - **Reload** — telling Prometheus to re-read its target files without a full restart.
 - **Compose profile** — an on/off switch for optional parts (MongoDB is behind one).

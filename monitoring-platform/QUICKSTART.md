@@ -18,7 +18,14 @@ cp .env.example .env
 #      MSSQL_DSN='sqlserver://mon_user:YourPass@<sql-host>:1433?database=master&encrypt=disable'
 #    (keep MSSQL_DSN single-quoted; leave COMPOSE_PROFILES empty = MongoDB stays off)
 
-# 3. On the SQL Server (once): create the read-only monitoring login
+# 2b. MORE THAN ONE SQL Server? List them instead of using MSSQL_DSN:
+#      cp mssql/servers.conf.example mssql/servers.conf
+#    one per line:   <name>  <DSN>      e.g.
+#      prod-sql-01  sqlserver://mon_user:Pass1@10.0.0.31:1433?database=master&encrypt=disable
+#      prod-sql-02  sqlserver://mon_user:Pass2@10.0.0.32:1433?database=master&encrypt=disable
+#    (servers.conf wins over MSSQL_DSN; it holds passwords so it is git-ignored)
+
+# 3. On EACH SQL Server (once): create the read-only monitoring login
 #      CREATE LOGIN mon_user WITH PASSWORD = 'YourPass';
 #      CREATE USER  mon_user FOR LOGIN mon_user;
 #      GRANT VIEW SERVER STATE TO mon_user;
@@ -32,6 +39,7 @@ bash scripts/smoke-test.sh
 # 6. Open Grafana
 #      http://<vm-ip>:3000   (admin / your password)
 #      Dashboards -> Monitoring -> SQL Server
+#      Use the "SQL Server" dropdown (top-left) to pick a server, or All to compare.
 ```
 
 **Normal, not errors:** `FAIL: node up (no data)` (and windows/snmp/etc.) — you just
