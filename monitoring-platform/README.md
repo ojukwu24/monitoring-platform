@@ -45,7 +45,8 @@ Servers, Kubernetes, Databases, and Endpoints & Network. Built for an office wal
 display (`/d/noc-overview/?kiosk` + F11).
 
 New to this? Follow the beginner [RUNBOOK.md](RUNBOOK.md). Done it before and just want
-the commands? See [QUICKSTART.md](QUICKSTART.md).
+the commands? See [QUICKSTART.md](QUICKSTART.md). Updating a VM that's already running?
+See [UPGRADING.md](UPGRADING.md).
 
 ## Requirements
 

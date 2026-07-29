@@ -396,7 +396,8 @@ To rebuild: clone the repo, restore the volumes (or VM), run `bash scripts/deplo
 ## 8. Everyday commands cheat-sheet
 
 ```bash
-bash scripts/deploy.sh          # start / re-apply everything
+git pull                        # get the latest version of this repo
+bash scripts/deploy.sh          # start / re-apply everything (safe to re-run)
 bash scripts/smoke-test.sh      # health check
 docker compose ps               # see which programs are running
 docker compose logs prometheus  # read one program's logs (swap the name)
@@ -414,6 +415,10 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 
 **`bash scripts/deploy.sh` says "copy .env.example to .env first"**
 → You skipped Step 3.2. Run `cp .env.example .env` and edit it.
+
+**After `git pull`: "your .env is missing settings that .env.example now defines"**
+→ The update added new settings. Copy the lines it prints into your `.env`, then re-run
+  `bash scripts/deploy.sh`. Full update guide: [UPGRADING.md](UPGRADING.md).
 
 **SQL Server panels are empty / `smoke-test` shows `mssql up` FAIL**
 → 1) Can the VM reach SQL Server? `nc -zv <sql-host> 1433` (firewall / port 1433).

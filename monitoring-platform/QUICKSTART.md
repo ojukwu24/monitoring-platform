@@ -48,6 +48,9 @@ haven't added those yet. Only `mssql up` matters for this test.
 
 **Add more later:** see RUNBOOK section 5 (one recipe per server type).
 
+**Already running and just pulled changes?** `git pull && bash scripts/deploy.sh` — see
+[UPGRADING.md](UPGRADING.md).
+
 **Handy:**
 ```bash
 docker compose ps                                 # what's running

@@ -6,6 +6,24 @@ cd "$(dirname "$0")/.."
 
 [ -f .env ] || { echo "ERROR: copy .env.example to .env and configure it first."; exit 1; }
 
+# After a `git pull`, .env.example may contain NEW settings your .env doesn't have.
+# Compose would silently expand those to empty (e.g. an image tag becoming ""), so
+# stop and tell the user exactly what to add.
+missing=""
+while IFS= read -r key; do
+  grep -qE "^[[:space:]]*(export[[:space:]]+)?${key}=" .env || missing="${missing} ${key}"
+done < <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' .env.example | sed 's/=$//' | sort -u)
+if [ -n "$missing" ]; then
+  echo "ERROR: your .env is missing settings that .env.example now defines:"
+  for k in $missing; do
+    echo "    ${k}=$(grep -m1 -E "^${k}=" .env.example | cut -d= -f2-)"
+  done
+  echo
+  echo "  Add the lines above to .env (copy the defaults, then edit), and re-run."
+  echo "  See UPGRADING.md."
+  exit 1
+fi
+
 # Load .env so envsubst can see the vars.
 set -a; . ./.env; set +a
 
