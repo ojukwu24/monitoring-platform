@@ -1,0 +1,15 @@
+# SQL Servers to monitor — ONE PER LINE:   <name>   <DSN>
+#
+#   <name>  a short label with no spaces. This is what you'll see in Grafana
+#           (it becomes the `instance` label). e.g. prod-sql-01
+#   <DSN>   how to connect. Each server can have its own login/password.
+#
+# Copy this file to  servers.conf  and edit it:
+#     cp mssql/servers.conf.example mssql/servers.conf
+# Then re-run  bash scripts/deploy.sh
+#
+# servers.conf is git-ignored because it contains passwords.
+# Lines starting with # and blank lines are ignored.
+
+prod-sql-01  sqlserver://mon_user:YourPass@10.0.0.31:1433?database=master&encrypt=disable
+prod-sql-02  sqlserver://mon_user:YourPass@10.0.0.32:1433?database=master&encrypt=disable

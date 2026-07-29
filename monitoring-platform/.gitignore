@@ -2,3 +2,4 @@
 .env
 alertmanager/alertmanager.yml
 mssql/sql_exporter.yml
+mssql/servers.conf

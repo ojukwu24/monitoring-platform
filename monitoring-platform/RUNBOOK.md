@@ -161,6 +161,7 @@ list of addresses) and tell Prometheus to re-read it.
 | Website / URL is up | `prometheus/targets/blackbox.yml` | nothing — just add the URL |
 | Network switch/firewall | `prometheus/targets/snmp.yml` | enable SNMP on the device; set the community in `snmp/snmp.yml` |
 | Kubernetes cluster | `prometheus/targets/kubernetes.yml` | follow `k8s/kube-state-metrics-install.md` |
+| More SQL Servers | `mssql/servers.conf` | nothing — one exporter covers them all (see 5f-2) |
 
 Below is one recipe per type. In every case you finish with the same reload command:
 ```bash
@@ -263,6 +264,37 @@ Logs use a small agent on the machine, not a target file.
 1. Install **Grafana Alloy** on the machine and point it at this VM's Loki —
    full steps (Linux and Windows) are in `alloy/README-install.md`.
 2. No Prometheus reload needed. View logs in Grafana → **Explore** → pick **Loki**.
+
+### 5f-2. More SQL Servers (2, 5, 50 — one exporter handles them all)
+You do **not** run another container per SQL Server. List them all in one file.
+
+1. Create the list (first time only):
+   ```bash
+   cp mssql/servers.conf.example mssql/servers.conf
+   ```
+2. Edit `mssql/servers.conf` — **one server per line, `<name>  <DSN>`**. The name is
+   what you'll see in Grafana; each server may have its own login:
+   ```
+   prod-sql-01  sqlserver://mon_user:Pass1@10.0.0.31:1433?database=master&encrypt=disable
+   prod-sql-02  sqlserver://mon_user:Pass2@10.0.0.32:1433?database=master&encrypt=disable
+   uat-sql-01   sqlserver://mon_user:Pass3@10.0.0.35:1433?database=master&encrypt=disable
+   ```
+   Run the `CREATE LOGIN … GRANT VIEW SERVER STATE` from step 3.3 **on each server**.
+3. Apply:
+   ```bash
+   bash scripts/deploy.sh
+   ```
+   (It regenerates the exporter config and restarts it. No Prometheus target edits
+   needed — the single exporter now reports all of them.)
+4. Check: the **SQL Server** dashboard's top-left **SQL Server** dropdown now lists every
+   server. Leave it on **All** to compare them, or pick one. `mssql_up` returns one
+   result per server, each labelled with its name.
+
+Notes:
+- `servers.conf` holds passwords, so it is **git-ignored** — back it up separately.
+- If `servers.conf` does not exist, the single `MSSQL_DSN` from `.env` is used instead
+  (that's the original single-server behaviour, still supported).
+- Alerts fire **per server** and name it, e.g. "SQL Server unreachable … prod-sql-02".
 
 ### 5g. MongoDB (only if you also run MongoDB)
 Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-run-mongodb)**.

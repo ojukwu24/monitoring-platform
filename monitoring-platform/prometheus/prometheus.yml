@@ -28,10 +28,19 @@ scrape_configs:
       - files:
           - /etc/prometheus/targets/node.yml
           - /etc/prometheus/targets/windows.yml
-          - /etc/prometheus/targets/mssql.yml
           - /etc/prometheus/targets/kubernetes.yml
           # MongoDB is opt-in — enable the `mongodb` compose profile and add
           # /etc/prometheus/targets/mongodb.yml here to scrape it.
+
+  # SQL Server: one exporter serving MANY SQL Servers. The exporter attaches its
+  # own `instance` label (the name from mssql/servers.conf) to each server's
+  # metrics, so honor_labels keeps those names instead of overwriting them with
+  # the exporter's own address.
+  - job_name: mssql
+    honor_labels: true
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets/mssql.yml
 
   # SNMP: multi-target exporter pattern. Prometheus passes each device as
   # ?target= to snmp-exporter, which does the SNMP walk.
