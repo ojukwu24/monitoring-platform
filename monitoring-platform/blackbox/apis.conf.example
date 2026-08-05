@@ -1,21 +1,46 @@
 # API endpoints to monitor — ONE PER LINE, fields separated by |
 #
-#   <name> | <url> | <Header>: <value>          (header is optional)
+#   <name> | <url> [| <Header>: <value>] [| <option>=<value>] ...
 #
-#   <name>    short label with no spaces — shown in Grafana (e.g. payments-api)
-#   <url>     full URL to probe, e.g. https://api.example.com/health
-#   <header>  optional auth header sent with the request, e.g.
+#   <name>    short label, no spaces — shown in Grafana (letters, digits, - _)
+#   <url>     full URL to probe
+#   Header    any field with a ':' is sent as a request header (repeatable), e.g.
 #                 X-API-Key: abc123
 #                 Authorization: Bearer eyJhbGciOi...
+#
+# OPTIONS (all optional):
+#   method=POST              HTTP verb (default GET)
+#   body={"ping":true}       request body; sets Content-Type: application/json
+#                            automatically unless you override it below
+#   content-type=text/xml    override the body's content type
+#   expect=200,201           status codes that count as healthy (default: any 2xx)
+#   match=<regexp>           response body must match this, else the probe FAILS
+#   insecure=true            skip TLS verification (self-signed certificates)
+#   timeout=20s              per-probe timeout (default 10s)
+#
+# NOTE: a body cannot contain the "|" character (it separates the fields).
 #
 # Copy this file to  apis.conf  and edit it:
 #     cp blackbox/apis.conf.example blackbox/apis.conf
 # Then re-run  bash scripts/deploy.sh
 #
 # apis.conf is git-ignored because it contains API keys.
-# APIs are probed every 60s. A 2xx response = UP; anything else = DOWN.
-# Lines starting with # and blank lines are ignored.
+# APIs are probed every 60s. Lines starting with # and blank lines are ignored.
 
+# --- simple GET with an API key ---------------------------------------------
 payments-api | https://api.example.com/health | X-API-Key: replace-with-real-key
-orders-api   | https://orders.example.com/v1/ping | Authorization: Bearer replace-with-token
-public-api   | https://status.example.com/health
+
+# --- GET with a bearer token -------------------------------------------------
+orders-api | https://orders.example.com/v1/ping | Authorization: Bearer replace-with-token
+
+# --- POST with a JSON body and an API key -----------------------------------
+search-api | https://api.example.com/v1/search | X-API-Key: replace-me | method=POST | body={"query":"health-check","limit":1}
+
+# --- POST, expecting 200 or 202, and the response must contain "ok" ---------
+jobs-api | https://api.example.com/v1/jobs | Authorization: Bearer replace-me | method=POST | body={"type":"noop"} | expect=200,202 | match="status"\s*:\s*"ok"
+
+# --- POST a SOAP/XML body ----------------------------------------------------
+legacy-api | https://legacy.example.com/svc | method=POST | content-type=text/xml | body=<ping/>
+
+# --- public endpoint, no auth ------------------------------------------------
+public-api | https://status.example.com/health

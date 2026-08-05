@@ -377,15 +377,42 @@ the API server — the monitoring VM just calls the URL.
    ```
 2. Edit `blackbox/apis.conf` — one API per line, fields separated by `|`:
    ```
-   <name> | <url> | <Header>: <value>
+   <name> | <url> [| <Header>: <value>] [| <option>=<value>] ...
    ```
-   The header is optional. Examples:
+   `<name>` is the label you'll see in Grafana (letters, digits, `-`, `_`).
+   Any field containing `:` is sent as a **request header** (you can list several).
+
+   **GET examples:**
    ```
    payments-api | https://api.example.com/health   | X-API-Key: abc123
    orders-api   | https://orders.example.com/ping  | Authorization: Bearer eyJhbGciOi...
    public-api   | https://status.example.com/health
    ```
-   `<name>` is the label you'll see in Grafana (letters, digits, `-`, `_`).
+
+   **POST with a body** — add `method=POST` and `body=`. A body sets
+   `Content-Type: application/json` automatically:
+   ```
+   search-api | https://api.example.com/v1/search | X-API-Key: abc123 | method=POST | body={"query":"health-check","limit":1}
+   ```
+
+   **All available options:**
+
+   | Option | What it does |
+   |---|---|
+   | `method=POST` | HTTP verb (default `GET`) |
+   | `body={"a":1}` | request body; implies JSON content type |
+   | `content-type=text/xml` | override the body's content type (e.g. SOAP/XML) |
+   | `expect=200,202` | which status codes count as healthy (default: any 2xx) |
+   | `match=<regexp>` | the **response body must match**, else the probe fails |
+   | `insecure=true` | skip TLS verification (self-signed certificates) |
+   | `timeout=20s` | per-probe timeout (default `10s`) |
+
+   Combining them — POST, accept 200 or 202, and require `"status":"ok"` in the reply:
+   ```
+   jobs-api | https://api.example.com/v1/jobs | Authorization: Bearer tok | method=POST | body={"type":"noop"} | expect=200,202 | match="status"\s*:\s*"ok"
+   ```
+
+   ⚠️ A body **cannot contain the `|` character** — it separates the fields.
 3. Apply:
    ```bash
    bash scripts/deploy.sh
@@ -400,9 +427,16 @@ Notes:
 - `apis.conf` holds API keys → **git-ignored**. Back it up separately.
 - Alerts you get for free: **ApiDown** (critical, 2m), **ApiUnauthorized** (critical —
   401/403, i.e. the key expired or was revoked), **ApiSlow** (warning — over 5s for 10m).
-- Requests are `GET`. If your API needs POST or a body check, say so and the module can
-  be extended — the generated file is `blackbox/blackbox.yml`.
-- Testing a key by hand: `curl -i -H 'X-API-Key: abc123' https://api.example.com/health`
+- Test a probe by hand before adding it, e.g. for the POST example:
+  ```bash
+  curl -i -X POST -H 'X-API-Key: abc123' -H 'Content-Type: application/json' \
+       -d '{"query":"health-check","limit":1}' https://api.example.com/v1/search
+  ```
+  If that returns 2xx, the monitor will show UP.
+- Use a **read-only / no-side-effect** endpoint for POST probes — it runs every 60s.
+  A health, ping, or search endpoint is ideal; never a "create order" endpoint.
+- The generated blackbox config is `blackbox/blackbox.yml` (do not edit by hand —
+  edit `apis.conf` and re-run `deploy.sh`).
 
 ### 5g. MongoDB (only if you also run MongoDB)
 Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-run-mongodb)**.
