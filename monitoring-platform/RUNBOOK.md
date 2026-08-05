@@ -139,7 +139,8 @@ bash scripts/smoke-test.sh
 `SKIP: Linux hosts (none configured)` are **normal** — you haven't added any yet.
 (See section 5 to add them later.)
 
-The test lists each resource by name, so a failure tells you exactly which one:
+See **[section 3.8](#38-the-health-check-smoke-testsh--how-to-read-it)** for how to
+read the output in full. In short, it lists each resource by name:
 ```
   up   prod-sql-01
   DOWN prod-sql-02
@@ -200,6 +201,66 @@ server or a SQL Server and a new tile appears automatically. Nothing to edit her
    by adding these to the `grafana` service environment in `docker-compose.yml`:
    `GF_AUTH_ANONYMOUS_ENABLED=true` and `GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer`.
    Only do this on a trusted internal network.
+
+---
+
+## 3.8 The health check (`smoke-test.sh`) — how to read it
+
+Run it any time — after deploying, after adding a server, or when someone reports a
+problem. It asks Prometheus about every resource and prints one line per group.
+
+```bash
+bash scripts/smoke-test.sh
+```
+
+**Three results, and only one of them is bad:**
+
+| Result | Meaning | Action |
+|---|---|---|
+| `PASS` | Configured and healthy | none |
+| `SKIP` | You don't have that resource type at all | none — this is normal |
+| `FAIL` | Something you **do** have is DOWN | fix it (see Troubleshooting) |
+
+**Example of a healthy run** on a SQL-only deployment:
+```
+== core services ==
+PASS: prometheus ready
+PASS: grafana health
+PASS: alertmanager ready
+PASS: loki ready
+
+== monitored resources ==
+SKIP: Linux hosts (none configured)
+SKIP: Windows hosts (none configured)
+  up   prod-sql-01
+  up   prod-sql-02
+PASS: SQL Servers (2 healthy)
+SKIP: Kubernetes (KSM) (none configured)
+SKIP: Network (SNMP) (none configured)
+SKIP: Websites (none configured)
+SKIP: API endpoints (none configured)
+
+SMOKE TEST: PASS
+```
+
+**Example of a failure** — it always names the culprit:
+```
+  up   payments-api
+  DOWN orders-api
+FAIL: API endpoints (1 of 2 DOWN)
+
+SMOKE TEST: FAIL (see FAIL lines above)
+```
+
+**Expired API keys are called out separately**, because a 401/403 is a different
+problem from an API being down:
+```
+  NOTE: an API returned 401/403 — its API key is likely expired or wrong:
+        - payments-api
+```
+
+The script exits `0` on success and `1` on failure, so you can use it in a cron job or
+a deployment pipeline.
 
 ---
 
@@ -501,7 +562,7 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 → The update added new settings. Copy the lines it prints into your `.env`, then re-run
   `bash scripts/deploy.sh`. Full update guide: [UPGRADING.md](UPGRADING.md).
 
-**SQL Server panels are empty / `smoke-test` shows `mssql up` FAIL**
+**SQL Server panels are empty / `smoke-test` shows `FAIL: SQL Servers`**
 → 1) Can the VM reach SQL Server? `nc -zv <sql-host> 1433` (firewall / port 1433).
   2) Is the connection string right? `MSSQL_DSN` **single-quoted** in `.env`, or the
      line in `mssql/servers.conf` (format: `<name>  <DSN>`, two fields).
@@ -597,6 +658,8 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
   login, password).
 - **`servers.conf`** — your list of SQL Servers (`<name>  <DSN>`, one per line) in
   `mssql/`. One exporter reads it and monitors them all. Holds passwords → git-ignored.
+- **PASS / FAIL / SKIP** — smoke-test results: healthy / configured-but-down /
+  not configured at all (SKIP is normal and never fails the run).
 - **`instance`** — the label identifying which server a metric came from (for SQL
   Server it's the name you chose in `servers.conf`).
 - **`.env`** — your private settings file (passwords, addresses). Never shared/committed.

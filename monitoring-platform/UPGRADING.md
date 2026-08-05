@@ -103,8 +103,12 @@ docker compose ps              # everything "running"
 Then open Grafana → **🚦 NOC Overview — All Systems**. If a group you use has gone
 grey or red, check `docker compose logs <service>` for that component.
 
-Remember: `FAIL ... (no data)` for things you have never configured (node, snmp,
-kubernetes…) is normal, not an upgrade failure.
+Reading the result:
+- `PASS` — configured and healthy.
+- `SKIP: ... (none configured)` — a resource type you don't use. **Normal**, never a
+  failure.
+- `FAIL` — something you *do* have is DOWN. The line above it names which one, e.g.
+  `DOWN prod-sql-02`. Compare against how it looked before the update.
 
 ---
 
