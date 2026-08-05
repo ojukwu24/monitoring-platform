@@ -6,3 +6,6 @@ mssql/servers.conf
 blackbox/blackbox.yml
 blackbox/apis.conf
 prometheus/targets/api.yml
+
+# transient render artefacts
+*.tmp

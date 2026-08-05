@@ -31,6 +31,9 @@ TARGETS="prometheus/targets/api.yml"
 
 [ -f "$BASE" ] || { echo "ERROR: $BASE missing." >&2; exit 1; }
 
+# Never leave half-written .tmp files behind if we exit on a bad config line.
+trap 'rm -f "${OUT}.tmp" "${TARGETS}.tmp"' EXIT
+
 # YAML single-quoted scalars escape a quote by doubling it.
 yq_escape() { printf "%s" "$1" | sed "s/'/''/g"; }
 trim()      { printf "%s" "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }

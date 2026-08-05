@@ -13,6 +13,9 @@ CONF="mssql/servers.conf"
 OUT="mssql/sql_exporter.yml"
 TMP="${OUT}.tmp"
 
+# Never leave a half-written .tmp behind on a bad config line.
+trap 'rm -f "$TMP"' EXIT
+
 # name<TAB>dsn pairs collected here
 targets=()
 
