@@ -3,3 +3,6 @@
 alertmanager/alertmanager.yml
 mssql/sql_exporter.yml
 mssql/servers.conf
+blackbox/blackbox.yml
+blackbox/apis.conf
+prometheus/targets/api.yml

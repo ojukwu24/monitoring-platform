@@ -79,7 +79,7 @@ groups:
   - name: endpoints
     rules:
       - alert: EndpointDown
-        expr: probe_success == 0
+        expr: probe_success{job="blackbox"} == 0
         for: 2m
         labels:
           severity: critical
@@ -93,6 +93,33 @@ groups:
           severity: warning
         annotations:
           summary: "TLS cert for {{ $labels.instance }} expires in <14 days"
+
+  - name: apis
+    rules:
+      - alert: ApiDown
+        expr: probe_success{job="api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API {{ $labels.api }} is failing ({{ $labels.instance }})"
+
+      - alert: ApiUnauthorized
+        # 401/403 usually means the API key expired or was revoked.
+        expr: probe_http_status_code{job="api"} == 401 or probe_http_status_code{job="api"} == 403
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API {{ $labels.api }} returned {{ $value }} — check its API key"
+
+      - alert: ApiSlow
+        expr: probe_duration_seconds{job="api"} > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API {{ $labels.api }} responding slowly ({{ $value }}s)"
 
   - name: kubernetes
     rules:

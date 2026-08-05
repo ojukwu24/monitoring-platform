@@ -1,0 +1,21 @@
+# API endpoints to monitor — ONE PER LINE, fields separated by |
+#
+#   <name> | <url> | <Header>: <value>          (header is optional)
+#
+#   <name>    short label with no spaces — shown in Grafana (e.g. payments-api)
+#   <url>     full URL to probe, e.g. https://api.example.com/health
+#   <header>  optional auth header sent with the request, e.g.
+#                 X-API-Key: abc123
+#                 Authorization: Bearer eyJhbGciOi...
+#
+# Copy this file to  apis.conf  and edit it:
+#     cp blackbox/apis.conf.example blackbox/apis.conf
+# Then re-run  bash scripts/deploy.sh
+#
+# apis.conf is git-ignored because it contains API keys.
+# APIs are probed every 60s. A 2xx response = UP; anything else = DOWN.
+# Lines starting with # and blank lines are ignored.
+
+payments-api | https://api.example.com/health | X-API-Key: replace-with-real-key
+orders-api   | https://orders.example.com/v1/ping | Authorization: Bearer replace-with-token
+public-api   | https://status.example.com/health

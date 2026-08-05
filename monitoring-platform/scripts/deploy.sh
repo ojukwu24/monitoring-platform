@@ -36,6 +36,9 @@ echo "Rendered alertmanager/alertmanager.yml"
 # Servers — from mssql/servers.conf, or MSSQL_DSN in .env for a single server.
 bash scripts/render-mssql-config.sh
 
+# Render blackbox modules + probe targets for API endpoints (holds API keys).
+bash scripts/render-api-config.sh
+
 # Fetch dashboards (idempotent).
 bash scripts/fetch-dashboards.sh
 

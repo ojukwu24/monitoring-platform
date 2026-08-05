@@ -167,8 +167,8 @@ It groups everything you monitor and colours it:
 | — / grey | Nothing configured in that group yet (**not** a fault) |
 
 **What's on it, top to bottom:**
-- **Top strip (6 tiles):** Targets DOWN · CRITICAL alerts · Warnings · Servers UP ·
-  SQL Servers UP · Total targets. A glance here tells you if anything is wrong at all.
+- **Top strip (7 tiles):** Targets DOWN · CRITICAL alerts · Warnings · Servers UP ·
+  SQL Servers UP · APIs UP · Total targets. A glance here tells you if anything is wrong.
 - **🔥 Active Alerts:** a live table of what is firing right now, colour-coded by
   severity. Empty table = everything is fine.
 - **🖥️ Servers:** one UP/DOWN tile per Linux/Windows host, plus CPU %, memory %, and
@@ -177,6 +177,8 @@ It groups everything you monitor and colours it:
   containers restarting in the last 15 min.
 - **🗄️ Databases:** one UP/DOWN tile per SQL Server, plus page life expectancy,
   buffer cache hit %, and active connections per server.
+- **🔌 API Endpoints:** UP/DOWN tile per API (probed every 60s with its API key),
+  response time, and HTTP status code.
 - **🌐 Endpoints & Network:** website/endpoint UP/DOWN tiles, TLS certificate days
   remaining, and SNMP network device status.
 
@@ -230,6 +232,7 @@ list of addresses) and tell Prometheus to re-read it.
 | Network switch/firewall | `prometheus/targets/snmp.yml` | enable SNMP on the device; set the community in `snmp/snmp.yml` |
 | Kubernetes cluster | `prometheus/targets/kubernetes.yml` | follow `k8s/kube-state-metrics-install.md` |
 | More SQL Servers | `mssql/servers.conf` | nothing — one exporter covers them all (see 5f-2) |
+| API endpoint (with API key) | `blackbox/apis.conf` | nothing — probed from the VM every 60s (see 5f-3) |
 
 Below is one recipe per type. In every case you finish with the same reload command:
 ```bash
@@ -363,6 +366,43 @@ Notes:
 - If `servers.conf` does not exist, the single `MSSQL_DSN` from `.env` is used instead
   (that's the original single-server behaviour, still supported).
 - Alerts fire **per server** and name it, e.g. "SQL Server unreachable … prod-sql-02".
+
+### 5f-3. API endpoints (with an API key / bearer token)
+Probed every 60 seconds. A 2xx response = UP; anything else = DOWN. No agent needed on
+the API server — the monitoring VM just calls the URL.
+
+1. Create the list (first time only):
+   ```bash
+   cp blackbox/apis.conf.example blackbox/apis.conf
+   ```
+2. Edit `blackbox/apis.conf` — one API per line, fields separated by `|`:
+   ```
+   <name> | <url> | <Header>: <value>
+   ```
+   The header is optional. Examples:
+   ```
+   payments-api | https://api.example.com/health   | X-API-Key: abc123
+   orders-api   | https://orders.example.com/ping  | Authorization: Bearer eyJhbGciOi...
+   public-api   | https://status.example.com/health
+   ```
+   `<name>` is the label you'll see in Grafana (letters, digits, `-`, `_`).
+3. Apply:
+   ```bash
+   bash scripts/deploy.sh
+   ```
+4. Check: **🚦 NOC Overview → 🔌 API Endpoints** shows a green/red tile per API, its
+   response time, and its HTTP status code. Verify from the command line with:
+   ```bash
+   curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=probe_success{job="api"}'
+   ```
+
+Notes:
+- `apis.conf` holds API keys → **git-ignored**. Back it up separately.
+- Alerts you get for free: **ApiDown** (critical, 2m), **ApiUnauthorized** (critical —
+  401/403, i.e. the key expired or was revoked), **ApiSlow** (warning — over 5s for 10m).
+- Requests are `GET`. If your API needs POST or a body check, say so and the module can
+  be extended — the generated file is `blackbox/blackbox.yml`.
+- Testing a key by hand: `curl -i -H 'X-API-Key: abc123' https://api.example.com/health`
 
 ### 5g. MongoDB (only if you also run MongoDB)
 Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-run-mongodb)**.

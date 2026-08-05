@@ -18,6 +18,7 @@ Grafana is the display; Prometheus, Alertmanager, and Loki are the engine.
 | MongoDB (opt-in) | mongodb_exporter — enable the `mongodb` compose profile |
 | Network gear | snmp_exporter |
 | Endpoint / uptime | blackbox_exporter |
+| API endpoints (API key / bearer auth) | blackbox_exporter, probed every 60s |
 | Logs | Grafana Alloy → Loki |
 
 ## Architecture

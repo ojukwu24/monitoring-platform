@@ -24,7 +24,8 @@ query "windows up"           'up%7Bjob%3D%22windows%22%7D'
 query "mssql up"             'mssql_up'
 query "kube-state-metrics up" 'up%7Bjob%3D%22kube-state-metrics%22%7D'
 query "snmp up"              'up%7Bjob%3D%22snmp%22%7D'
-query "blackbox probe"       'probe_success'
+query "blackbox probe"       'probe_success%7Bjob%3D%22blackbox%22%7D'
+query "api probes"          'probe_success%7Bjob%3D%22api%22%7D'
 
 echo
 [ "$fail" -eq 0 ] && echo "SMOKE TEST: PASS" || echo "SMOKE TEST: FAIL (see FAIL lines above)"
