@@ -5,3 +5,4 @@
 #     - '10.0.0.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
 #   labels:
 #     job: kube-state-metrics
+#     env: prod          # dev | staging | prod

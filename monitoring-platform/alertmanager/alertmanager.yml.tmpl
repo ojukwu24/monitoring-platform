@@ -8,12 +8,19 @@ global:
 
 route:
   receiver: email
-  group_by: ['alertname', 'job']
+  group_by: ['alertname', 'job', 'env']
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
   routes:
-    # Critical alerts go to email AND chat; warnings go to email only.
+    # Non-production (dev/staging/uat/test): email only, never chat, and re-notify
+    # far less often. Listed FIRST so it wins over the critical rule below.
+    - matchers:
+        - env=~"dev|test|uat|stage|staging"
+      receiver: email
+      repeat_interval: 24h
+
+    # Production (and anything without an env label): critical goes to email AND chat.
     - matchers:
         - severity="critical"
       receiver: email-and-chat

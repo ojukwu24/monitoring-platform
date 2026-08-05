@@ -6,3 +6,4 @@
 #     - 'https://api.client.example.com/health'
 #   labels:
 #     job: blackbox
+#     env: prod          # dev | staging | prod

@@ -15,7 +15,28 @@
     "to": "now"
   },
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(up, env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": []
+      }
+    ]
   },
   "annotations": {
     "list": []
@@ -61,7 +82,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(up == 0) or vector(0)",
+          "expr": "count(up{env=~\"$env\"} == 0) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -108,7 +129,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"critical\"}) or vector(0)",
+          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"critical\", env=~\"$env\"}) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -155,7 +176,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"warning\"}) or vector(0)",
+          "expr": "count(ALERTS{alertstate=\"firing\", severity=\"warning\", env=~\"$env\"}) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -198,7 +219,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(up{job=~\"node|windows\"} == 1) or vector(0)",
+          "expr": "count(up{job=~\"node|windows\", env=~\"$env\"} == 1) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -241,7 +262,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(mssql_up == 1) or vector(0)",
+          "expr": "count(mssql_up{env=~\"$env\"} == 1) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -284,7 +305,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(up) or vector(0)",
+          "expr": "count(up{env=~\"$env\"}) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -378,7 +399,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "ALERTS{alertstate=\"firing\"}",
+          "expr": "ALERTS{alertstate=\"firing\", env=~\"$env\"}",
           "format": "table",
           "instant": true,
           "datasource": {
@@ -458,7 +479,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up{job=~\"node|windows\"}",
+          "expr": "up{job=~\"node|windows\", env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -514,7 +535,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 - avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100 or 100 - avg by(instance) (irate(windows_cpu_time_total{mode=\"idle\"}[5m])) * 100",
+          "expr": "100 - avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\", env=~\"$env\"}[5m])) * 100 or 100 - avg by(instance) (irate(windows_cpu_time_total{mode=\"idle\", env=~\"$env\"}[5m])) * 100",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -570,7 +591,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) or 100 * (1 - windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes)",
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) or 100 * (1 - windows_os_physical_memory_free_bytes{env=~\"$env\"} / windows_cs_physical_memory_bytes{env=~\"$env\"})",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -626,7 +647,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "min by(instance) (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"}) * 100 or min by(instance) (windows_logical_disk_free_bytes / windows_logical_disk_size_bytes) * 100",
+          "expr": "min by(instance) (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\", env=~\"$env\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\", env=~\"$env\"}) * 100 or min by(instance) (windows_logical_disk_free_bytes{env=~\"$env\"} / windows_logical_disk_size_bytes{env=~\"$env\"}) * 100",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -687,7 +708,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})",
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\", env=~\"$env\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -734,7 +755,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"false\"})",
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"false\", env=~\"$env\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -777,7 +798,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(kube_pod_status_phase{phase=\"Running\"})",
+          "expr": "sum(kube_pod_status_phase{phase=\"Running\", env=~\"$env\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -828,7 +849,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(kube_pod_status_phase{phase=~\"Failed|Pending|Unknown\"})",
+          "expr": "sum(kube_pod_status_phase{phase=~\"Failed|Pending|Unknown\", env=~\"$env\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -879,7 +900,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(increase(kube_pod_container_status_restarts_total[15m]) > 0) or vector(0)",
+          "expr": "count(increase(kube_pod_container_status_restarts_total{env=~\"$env\"}[15m]) > 0) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -957,7 +978,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "mssql_up",
+          "expr": "mssql_up{env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1012,7 +1033,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "mssql_page_life_expectancy",
+          "expr": "mssql_page_life_expectancy{env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1068,7 +1089,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "mssql_buffer_cache_hit_ratio",
+          "expr": "mssql_buffer_cache_hit_ratio{env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1122,7 +1143,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by(instance) (mssql_connections)",
+          "expr": "sum by(instance) (mssql_connections{env=~\"$env\"})",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1201,7 +1222,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "probe_success{job=\"blackbox\"}",
+          "expr": "probe_success{job=\"blackbox\", env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1255,7 +1276,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(probe_ssl_earliest_cert_expiry - time()) / 86400",
+          "expr": "(probe_ssl_earliest_cert_expiry{env=~\"$env\"} - time()) / 86400",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1321,7 +1342,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up{job=\"snmp\"}",
+          "expr": "up{job=\"snmp\", env=~\"$env\"}",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1365,7 +1386,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "count(probe_success{job=\"api\"} == 1) or vector(0)",
+          "expr": "count(probe_success{job=\"api\", env=~\"$env\"} == 1) or vector(0)",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1443,7 +1464,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "probe_success{job=\"api\"}",
+          "expr": "probe_success{job=\"api\", env=~\"$env\"}",
           "legendFormat": "{{api}}",
           "datasource": {
             "type": "prometheus",
@@ -1498,7 +1519,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "probe_duration_seconds{job=\"api\"}",
+          "expr": "probe_duration_seconds{job=\"api\", env=~\"$env\"}",
           "legendFormat": "{{api}}",
           "datasource": {
             "type": "prometheus",
@@ -1555,7 +1576,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "probe_http_status_code{job=\"api\"}",
+          "expr": "probe_http_status_code{job=\"api\", env=~\"$env\"}",
           "legendFormat": "{{api}}",
           "datasource": {
             "type": "prometheus",

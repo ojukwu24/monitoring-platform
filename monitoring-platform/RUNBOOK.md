@@ -193,6 +193,9 @@ It groups everything you monitor and colours it:
 **It grows by itself.** The tiles are driven by whatever Prometheus is scraping — add a
 server or a SQL Server and a new tile appears automatically. Nothing to edit here.
 
+**Environment dropdown.** If you monitor dev/staging/prod from this VM, use the
+**Environment** selector at the top to show one, some, or All — see section 6.8.
+
 **Put it on the office TV:**
 1. Open the dashboard, then add `?kiosk` to the URL to hide all menus, e.g.
    `http://<vm-ip>:3000/d/noc-overview/?kiosk`
@@ -648,6 +651,107 @@ To mute a known issue temporarily, use **Silences** in the Alertmanager web UI
 
 ---
 
+## 6.8 Monitoring dev, staging and production from one VM
+
+You do **not** need three monitoring VMs. One VM watches all three environments; each
+resource carries an `env` label, and you filter/route by it.
+
+### Step 1 — Label your servers
+
+In the target files, add `env:` alongside `job:`. Group them per environment:
+
+`prometheus/targets/node.yml`
+```yaml
+- targets:
+    - '10.0.1.11:9100'   # app-01
+    - '10.0.1.12:9100'   # app-02
+  labels:
+    job: node
+    os: linux
+    env: prod
+
+- targets:
+    - '10.0.2.11:9100'   # staging app
+  labels:
+    job: node
+    os: linux
+    env: staging
+
+- targets:
+    - '10.0.3.11:9100'   # dev box
+  labels:
+    job: node
+    os: linux
+    env: dev
+```
+The same pattern works in `windows.yml`, `blackbox.yml`, `snmp.yml`, and
+`kubernetes.yml`. Then reload:
+```bash
+curl -s -X POST http://localhost:9090/-/reload
+```
+
+### Step 2 — Name SQL Servers and APIs by environment
+
+These come from one exporter, so their `env` is taken **from the name**. Just prefix
+each name with the environment and it is applied automatically:
+
+`mssql/servers.conf`
+```
+prod-sql-01     sqlserver://mon_user:Pass@10.0.1.31:1433?database=master&encrypt=disable
+staging-sql-01  sqlserver://mon_user:Pass@10.0.2.31:1433?database=master&encrypt=disable
+dev-sql-01      sqlserver://mon_user:Pass@10.0.3.31:1433?database=master&encrypt=disable
+```
+
+`blackbox/apis.conf`
+```
+prod-payments-api    | https://api.example.com/health        | X-API-Key: key1
+staging-payments-api | https://api-staging.example.com/health | X-API-Key: key2
+```
+
+Recognised prefixes: `prod`, `production`, `stage`, `staging`, `uat`, `test`, `dev`
+(followed by `-` or `_`). Anything else simply gets no `env` label — which is fine, it
+still shows under **All**.
+
+Apply with `bash scripts/deploy.sh`.
+
+### Step 3 — Use the filter
+
+The **🚦 NOC Overview** dashboard now has an **Environment** dropdown at the top:
+
+- **All** — everything, all three environments on one screen (good for the office TV).
+- **prod** — production only. Handy on a second screen, or when triaging.
+- Pick two (e.g. `prod` + `staging`) to compare.
+
+Anything without an `env` label still appears under **All**.
+
+### Step 4 — Alerts are already routed sensibly
+
+The routing understands environments out of the box:
+
+| Environment | Where alerts go | Re-notify |
+|---|---|---|
+| **prod** (or no env label) | email + chat for `critical`, email for `warning` | every 4h |
+| **dev / staging / uat / test** | **email only — never chat** | every 24h |
+
+So a dev box falling over won't fill the team chat at 2am, but you still get a record
+by email. Alerts are grouped by environment too, so a staging outage doesn't get mixed
+into a production notification.
+
+Want dev alerts to go somewhere else entirely (or nowhere)? Edit
+`alertmanager/alertmanager.yml.tmpl` — the non-prod route is the first entry under
+`routes:`. Point it at another receiver, or give it a different `email_configs.to`.
+
+### Notes
+
+- **One Prometheus, one retention setting** for all environments. If you want to keep
+  prod data longer than dev, that needs separate instances — usually not worth it.
+- **The VM must reach all three networks.** If dev/staging are firewalled off, open the
+  exporter ports (9100/9182/1433/etc.) from the monitoring VM only.
+- **Naming discipline pays off.** Prefix hostnames and API names with the environment
+  and everything — dashboards, alerts, grouping — sorts itself out.
+
+---
+
 ## 7. Backups (so you can rebuild if the VM dies)
 
 Two things to save:
@@ -813,6 +917,8 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
   login, password).
 - **`servers.conf`** — your list of SQL Servers (`<name>  <DSN>`, one per line) in
   `mssql/`. One exporter reads it and monitors them all. Holds passwords → git-ignored.
+- **`env`** — label marking which environment a resource belongs to (dev/staging/prod).
+  Set in the target files, or taken from the name prefix for SQL Servers and APIs.
 - **SMTP** — the mail server Alertmanager sends alert emails *through* (set in `.env`).
 - **Silence** — temporarily muting a known alert in the Alertmanager UI.
 - **PASS / FAIL / SKIP** — smoke-test results: healthy / configured-but-down /

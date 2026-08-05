@@ -6,3 +6,4 @@
 #     - '10.0.0.2'    # firewall
 #   labels:
 #     job: snmp
+#     env: prod          # dev | staging | prod

@@ -41,6 +41,14 @@ scrape_configs:
     file_sd_configs:
       - files:
           - /etc/prometheus/targets/mssql.yml
+    # One exporter serves every SQL Server, so `env` can't come from the target
+    # file — derive it from the server name instead (prod-sql-01 -> env=prod).
+    # Names that don't start with an environment simply get no env label.
+    metric_relabel_configs:
+      - source_labels: [instance]
+        regex: '(prod|production|stage|staging|uat|test|dev)[-_].*'
+        target_label: env
+        replacement: '$1'
 
   # SNMP: multi-target exporter pattern. Prometheus passes each device as
   # ?target= to snmp-exporter, which does the SNMP walk.
@@ -80,6 +88,12 @@ scrape_configs:
         regex: module
       - target_label: __address__
         replacement: blackbox-exporter:9115
+    # Derive env from the API name (prod-payments-api -> env=prod).
+    metric_relabel_configs:
+      - source_labels: [api]
+        regex: '(prod|production|stage|staging|uat|test|dev)[-_].*'
+        target_label: env
+        replacement: '$1'
 
   # Blackbox: uptime/synthetic probes, also multi-target.
   - job_name: blackbox
