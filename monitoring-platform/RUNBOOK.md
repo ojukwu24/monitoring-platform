@@ -511,14 +511,140 @@ Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-r
 
 ---
 
-## 6. Changing where alerts go (email / chat)
+## 6. Email alerts — SMTP setup and testing
 
-1. Open `alertmanager/alertmanager.yml.tmpl`.
-2. Email settings and the Slack webhook come from your `.env` (SMTP_* and SLACK_*).
-   To switch chat tools:
-   - **Microsoft Teams:** add an `msteams_configs` receiver with your Teams webhook URL.
-   - **Telegram:** add a `telegram_configs` receiver with a bot token and chat id.
-3. Re-run `bash scripts/deploy.sh` (it re-fills and reloads).
+Alertmanager sends the emails. It needs an SMTP server to send *through* — your
+company mail server, Microsoft 365, Gmail, or an internal relay.
+
+### 6.1 Fill in the SMTP settings
+
+Edit `.env`:
+
+| Setting | What it is | Example |
+|---|---|---|
+| `SMTP_SMARTHOST` | mail server **and port** | `smtp.office365.com:587` |
+| `SMTP_FROM` | address the alerts come *from* | `monitoring@yourcompany.com` |
+| `SMTP_USER` | login for the mail server | `monitoring@yourcompany.com` |
+| `SMTP_PASSWORD` | that account's password / app password | `••••••` |
+| `ALERT_EMAIL_TO` | who receives the alerts | `it-team@yourcompany.com` |
+
+`ALERT_EMAIL_TO` can be a distribution list, or several addresses separated by commas.
+
+**Ask your mail admin for a dedicated send-only mailbox.** Don't use a person's
+account — when they change their password, alerting silently dies.
+
+### 6.2 Settings for common providers
+
+**Microsoft 365 / Exchange Online**
+```
+SMTP_SMARTHOST=smtp.office365.com:587
+SMTP_FROM=monitoring@yourcompany.com
+SMTP_USER=monitoring@yourcompany.com
+SMTP_PASSWORD=<the mailbox password>
+```
+The mailbox must have SMTP AUTH enabled (admins often disable it by default), and if
+MFA is on you need an **app password**. For internal-only delivery, a **direct send**
+connector to `yourcompany-com.mail.protection.outlook.com:25` avoids auth entirely.
+
+**Gmail / Google Workspace**
+```
+SMTP_SMARTHOST=smtp.gmail.com:587
+SMTP_USER=monitoring@yourcompany.com
+SMTP_PASSWORD=<16-character App Password, not the normal password>
+```
+Google requires an **App Password** (2-Step Verification must be on).
+
+**Internal relay with no authentication** (common on-prem)
+```
+SMTP_SMARTHOST=mail.internal.local:25
+SMTP_FROM=monitoring@yourcompany.com
+SMTP_USER=
+SMTP_PASSWORD=
+```
+Leave user and password empty and ask your mail admin to allow relaying from the
+monitoring VM's IP address.
+
+### 6.3 Apply the settings
+
+```bash
+bash scripts/deploy.sh
+```
+This re-renders `alertmanager/alertmanager.yml` from the template with your values and
+restarts Alertmanager. **Passwords only live in `.env` and the rendered file, both
+git-ignored.**
+
+Changed only the routing template and want to apply it without a full deploy?
+```bash
+docker compose restart alertmanager
+```
+
+### 6.4 Test it — the important part
+
+Send a **synthetic alert** that delivers a real email and then clears itself:
+
+```bash
+bash scripts/test-alert.sh
+```
+
+What should happen:
+1. The alert appears at `http://<vm-ip>:9093/#/alerts` within seconds.
+2. An email lands in `ALERT_EMAIL_TO` (and a chat message, for `critical`).
+3. After 5 minutes it auto-resolves and you get a **RESOLVED** message — which proves
+   the full round trip.
+
+Variations:
+```bash
+bash scripts/test-alert.sh --warning      # email only (no chat)
+bash scripts/test-alert.sh --minutes 2    # clears sooner
+```
+
+If nothing arrives, the reason is almost always in the log:
+```bash
+docker compose logs --tail=50 alertmanager
+```
+
+Check the config is valid at any time:
+```bash
+docker compose exec alertmanager amtool check-config /etc/alertmanager/alertmanager.yml
+```
+
+### 6.5 Testing with a *real* alert (end-to-end)
+
+The synthetic test proves email works. To prove the whole chain (Prometheus → rule →
+Alertmanager → inbox), cause a genuine failure — the safest is to stop something you
+monitor deliberately:
+
+- Add a deliberately wrong target (e.g. an unused IP) to `prometheus/targets/node.yml`,
+  reload, and wait ~2 minutes for **HostDown** to fire. Remove it afterwards.
+- Or stop a test exporter and watch it fire, then start it again to see RESOLVED.
+
+Watch it progress at `http://<vm-ip>:9090/alerts` — a rule goes
+**Inactive → Pending → Firing**. `for: 2m` means it must stay broken for 2 minutes
+before it actually alerts (this suppresses noise from brief blips).
+
+### 6.6 Chat alerts (Slack / Teams / Telegram)
+
+Critical alerts also go to chat. Set `SLACK_WEBHOOK_URL` and `SLACK_CHANNEL` in `.env`.
+To use a different platform, edit `alertmanager/alertmanager.yml.tmpl`:
+- **Microsoft Teams:** replace `slack_configs` with `msteams_configs` + your webhook URL.
+- **Telegram:** use `telegram_configs` with a `bot_token` and `chat_id`.
+
+Then `bash scripts/deploy.sh` and re-run `scripts/test-alert.sh`.
+
+### 6.7 Who gets what
+
+Routing lives in `alertmanager/alertmanager.yml.tmpl`:
+
+| Severity | Goes to |
+|---|---|
+| `critical` | email **and** chat |
+| `warning` | email only |
+
+Alerts are grouped (`group_by: alertname, job`) and repeat every 4 hours while still
+firing, so ten broken servers produce a digest rather than ten separate emails.
+
+To mute a known issue temporarily, use **Silences** in the Alertmanager web UI
+(`http://<vm-ip>:9093`) — far better than deleting the alert rule.
 
 ---
 
@@ -541,6 +667,7 @@ To rebuild: clone the repo, restore the volumes (or VM), run `bash scripts/deplo
 git pull                        # get the latest version of this repo
 bash scripts/deploy.sh          # start / re-apply everything (safe to re-run)
 bash scripts/smoke-test.sh      # health check
+bash scripts/test-alert.sh      # send a test alert (proves email/chat works)
 docker compose ps               # see which programs are running
 docker compose logs prometheus  # read one program's logs (swap the name)
 docker compose restart grafana  # restart one program
@@ -594,6 +721,34 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 → The PromQL wasn't URL-encoded. Don't put `?query=up{job="windows"}` straight in the
   URL — let curl encode it:
   `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="windows"}'`
+
+**No alert emails arrive**
+→ First: `bash scripts/test-alert.sh`, then `docker compose logs --tail=50 alertmanager`.
+  The SMTP error is almost always there. Common ones:
+
+  | Log message | Cause / fix |
+  |---|---|
+  | `authentication failed` / `535` | Wrong `SMTP_USER`/`SMTP_PASSWORD`; with MFA you need an **app password**. For Microsoft 365, SMTP AUTH may be disabled on the mailbox — ask your mail admin. |
+  | `connection refused` / `i/o timeout` | Wrong host/port, or the VM's outbound firewall blocks it. Test: `nc -zv smtp.office365.com 587` |
+  | `must issue a STARTTLS command first` | You're on a TLS-only port. Use `587` (STARTTLS), not `465`. |
+  | `relay access denied` / `5.7.1` | The mail server won't relay for this VM. Ask your admin to allow the VM's IP, or supply real credentials. |
+  | `sender address rejected` | `SMTP_FROM` must be an address the server is allowed to send as — usually the same as `SMTP_USER`. |
+  | nothing in the log at all | Alertmanager never got the alert. Check Prometheus → **Status → Runtime** shows the Alertmanager, and that the rule is actually firing at `http://<vm>:9090/alerts`. |
+
+  Also worth checking: the alert really is `critical`/`warning` (routing matches on
+  severity), and the mail didn't land in **junk** — new sending addresses often do.
+
+**Alert fired in Prometheus but no email**
+→ Prometheus shows a rule **Firing** but Alertmanager shows nothing: check
+  `alerting.alertmanagers` in `prometheus/prometheus.yml` and that both containers are
+  running (`docker compose ps`). If Alertmanager *does* show it, the problem is SMTP —
+  see the table above.
+
+**Emails arrive but hours late / repeatedly**
+→ That's the grouping and repeat settings in `alertmanager/alertmanager.yml.tmpl`:
+  `group_wait` (30s before the first message), `group_interval` (5m between updates),
+  `repeat_interval` (4h re-notify while still broken). Tune them there, then
+  `bash scripts/deploy.sh`.
 
 **`SKIP: ... (none configured)` lines in the smoke test**
 → Normal. Those are resource types you haven't added yet (node, windows, snmp…).
@@ -658,6 +813,8 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
   login, password).
 - **`servers.conf`** — your list of SQL Servers (`<name>  <DSN>`, one per line) in
   `mssql/`. One exporter reads it and monitors them all. Holds passwords → git-ignored.
+- **SMTP** — the mail server Alertmanager sends alert emails *through* (set in `.env`).
+- **Silence** — temporarily muting a known alert in the Alertmanager UI.
 - **PASS / FAIL / SKIP** — smoke-test results: healthy / configured-but-down /
   not configured at all (SKIP is normal and never fails the run).
 - **`instance`** — the label identifying which server a metric came from (for SQL

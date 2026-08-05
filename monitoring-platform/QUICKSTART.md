@@ -49,6 +49,10 @@ The test names each resource, so `DOWN prod-sql-02` tells you exactly what to fi
 
 **Add more later:** see RUNBOOK section 5 (one recipe per server type).
 
+**Turn on email alerts:** set the `SMTP_*` and `ALERT_EMAIL_TO` values in `.env`,
+run `bash scripts/deploy.sh`, then prove it works with `bash scripts/test-alert.sh`
+— see RUNBOOK section 6.
+
 **Already running and just pulled changes?** `git pull && bash scripts/deploy.sh` — see
 [UPGRADING.md](UPGRADING.md).
 

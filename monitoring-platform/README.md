@@ -38,6 +38,7 @@ cp .env.example .env       # then edit: TENANT, passwords, MSSQL_DSN, SMTP, chat
 # edit prometheus/targets/*.yml with your real host IPs
 bash scripts/deploy.sh     # renders secrets, fetches dashboards, brings stack up
 bash scripts/smoke-test.sh # health check: PASS / FAIL / SKIP per resource
+bash scripts/test-alert.sh # optional: prove email/chat alerting works
 ```
 
 Then browse Grafana at `http://<vm>:3000`. Start with **🚦 NOC Overview — All Systems**:

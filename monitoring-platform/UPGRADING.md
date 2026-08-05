@@ -88,7 +88,7 @@ Most of the time just run `deploy.sh`. If you want the minimum action:
 | `prometheus.yml` (jobs, scrape settings) | `curl -s -X POST http://localhost:9090/-/reload` |
 | Your target files | `curl -s -X POST http://localhost:9090/-/reload` |
 | `docker-compose.yml` (new service, new image tag) | `bash scripts/deploy.sh` |
-| Alertmanager routing / `.env` secrets | `bash scripts/deploy.sh` |
+| Alertmanager routing / `.env` secrets | `bash scripts/deploy.sh` (then `bash scripts/test-alert.sh` to confirm email still works) |
 | `mssql/servers.conf` | `bash scripts/deploy.sh` |
 
 ---
