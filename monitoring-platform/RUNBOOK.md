@@ -135,9 +135,16 @@ the programs. **Expected:** it ends with lines like `Grafana: http://localhost:3
 ```bash
 bash scripts/smoke-test.sh
 ```
-**Expected:** `PASS` for the core services and `PASS: mssql up`. Lines like
-`FAIL: node up (no data)` are **normal and fine** — you have no Linux hosts configured
-yet, so there's simply nothing there. (See section 5 to add them later.)
+**Expected:** `PASS` for the core services and `PASS: SQL Servers`. Lines like
+`SKIP: Linux hosts (none configured)` are **normal** — you haven't added any yet.
+(See section 5 to add them later.)
+
+The test lists each resource by name, so a failure tells you exactly which one:
+```
+  up   prod-sql-01
+  DOWN prod-sql-02
+FAIL: SQL Servers (1 of 2 DOWN)
+```
 
 ### Step 3.6 — Look at your data
 Open `http://<vm-ip>:3000` in a browser. Log in with `admin` and the password you set.
@@ -527,9 +534,9 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   URL — let curl encode it:
   `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="windows"}'`
 
-**Lots of `FAIL ... (no data)` in the smoke test**
-→ Usually normal — those are things you haven't added yet (node, windows, snmp…).
-  Only worry about the ones you actually configured.
+**`SKIP: ... (none configured)` lines in the smoke test**
+→ Normal. Those are resource types you haven't added yet (node, windows, snmp…).
+  SKIP never fails the test — only `FAIL` (something configured but DOWN) does.
 
 **Windows dashboard shows "No data" (every panel blank)**
 → The dashboard's top-left **server** dropdown is filled from live Windows metrics; if

@@ -43,8 +43,9 @@ bash scripts/smoke-test.sh
 #      Use the "SQL Server" dropdown (top-left) to pick a server, or All to compare.
 ```
 
-**Normal, not errors:** `FAIL: node up (no data)` (and windows/snmp/etc.) — you just
-haven't added those yet. Only `mssql up` matters for this test.
+**Normal, not errors:** `SKIP: Linux hosts (none configured)` (and windows/snmp/etc.) —
+you just haven't added those yet. Only `SQL Servers` matters for this test.
+The test names each resource, so `DOWN prod-sql-02` tells you exactly what to fix.
 
 **Add more later:** see RUNBOOK section 5 (one recipe per server type).
 
