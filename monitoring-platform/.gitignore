@@ -9,3 +9,12 @@ prometheus/targets/api.yml
 
 # transient render artefacts
 *.tmp
+
+# Your live target lists & device config — seeded from the .example files by
+# deploy.sh. Untracked so `git pull` can never overwrite your real IPs/keys.
+prometheus/targets/node.yml
+prometheus/targets/windows.yml
+prometheus/targets/kubernetes.yml
+prometheus/targets/snmp.yml
+prometheus/targets/blackbox.yml
+snmp/snmp.yml

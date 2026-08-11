@@ -287,6 +287,11 @@ The platform ships watching **nothing** except SQL Server, on purpose — so you
 watch what you actually have. To add something, you edit its "target file" (a simple
 list of addresses) and tell Prometheus to re-read it.
 
+> Your live config files (`prometheus/targets/*.yml`, `snmp/snmp.yml`) are **git-ignored**
+> and created from the shipped `.example` templates on first deploy. That means
+> `git pull` can never overwrite your real IPs. If a file is missing, run
+> `bash scripts/deploy.sh` and it will be created for you.
+
 **General pattern for any target:**
 1. Open the matching file in `prometheus/targets/`.
 2. Remove the `#` from the example lines and put in your real address.

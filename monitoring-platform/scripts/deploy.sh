@@ -27,6 +27,17 @@ fi
 # Load .env so envsubst can see the vars.
 set -a; . ./.env; set +a
 
+# Seed your live config files from the shipped examples the first time only.
+# These are git-ignored, so `git pull` can never overwrite your real IPs/keys.
+for ex in prometheus/targets/*.yml.example snmp/snmp.yml.example; do
+  [ -e "$ex" ] || continue
+  live="${ex%.example}"
+  if [ ! -f "$live" ]; then
+    cp "$ex" "$live"
+    echo "Created ${live} (from $(basename "$ex")) — edit it to add your targets."
+  fi
+done
+
 # Render Alertmanager config from template (contains SMTP + webhook secrets).
 command -v envsubst >/dev/null || { echo "ERROR: envsubst not found (install gettext)."; exit 1; }
 envsubst < alertmanager/alertmanager.yml.tmpl > alertmanager/alertmanager.yml

@@ -21,15 +21,16 @@ container images, applies changes, and leaves everything else alone.
 | Thing | Kept? | Why |
 |---|---|---|
 | Your `.env` | ✅ | git-ignored — `git pull` never touches it |
-| `mssql/servers.conf` | ✅ | git-ignored |
-| Your target lists (`prometheus/targets/*.yml`) | ⚠️ tracked — see below |
+| `mssql/servers.conf`, `blackbox/apis.conf` | ✅ | git-ignored |
+| `snmp/snmp.yml` (community string) | ✅ | git-ignored (seeded from `.example`) |
+| Your target lists (`prometheus/targets/*.yml`) | ✅ | git-ignored (seeded from `.example`) |
 | Metrics history | ✅ | lives in the `prometheus_data` Docker volume |
 | Logs | ✅ | `loki_data` volume |
 | Grafana users / manual changes | ✅ | `grafana_data` volume |
 
 ---
 
-## The two things that can bite you
+## The two things to know about
 
 ### 1. New settings in `.env.example`
 
@@ -52,27 +53,50 @@ diff <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*' .env.example | sort -u) \
      <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*' .env | sort -u)
 ```
 
-### 2. You edited a tracked file (usually `prometheus/targets/*.yml`)
-
-Target files ship in git, so if an update also changes one, `git pull` can conflict:
+### 2. Local changes to tracked files
 
 ```
 error: Your local changes to the following files would be overwritten by merge
 ```
 
-Fix — keep your version, take the update for everything else:
+**As of the "untrack live config" change this should no longer happen** — the files you
+edit (`prometheus/targets/*.yml`, `snmp/snmp.yml`, `servers.conf`, `apis.conf`, `.env`)
+are all git-ignored now, so `git pull` cannot touch them. The repo ships `.example`
+templates instead, and `deploy.sh` copies them into place the first time only.
+
+**One-time migration** — needed only if you deployed *before* that change and have
+edited target files. Back up, take the update, restore:
 
 ```bash
-git stash                 # set your edits aside
+cd monitoring-platform
+
+# 1. Back up everything you've customised
+mkdir -p ~/monitoring-backup
+cp -r prometheus/targets ~/monitoring-backup/
+cp snmp/snmp.yml ~/monitoring-backup/ 2>/dev/null
+cp .env ~/monitoring-backup/
+cp mssql/servers.conf blackbox/apis.conf ~/monitoring-backup/ 2>/dev/null
+
+# 2. Let git replace the now-renamed tracked files (your copies are backed up)
+git checkout -- prometheus/targets snmp blackbox 2>/dev/null
 git pull
-git stash pop             # put them back
-```
-If `git stash pop` reports a conflict, open the file, keep your real IPs, save, then
-`git add <file>`.
 
-Prefer to avoid this entirely? Back up your target files before pulling:
+# 3. Put your real config back (these are untracked from now on)
+cp ~/monitoring-backup/targets/*.yml prometheus/targets/ 2>/dev/null
+cp ~/monitoring-backup/snmp.yml snmp/ 2>/dev/null
+
+# 4. Apply
+bash scripts/deploy.sh
+bash scripts/smoke-test.sh
+```
+
+Step 3 only copies back files that exist — anything you never customised is simply
+seeded fresh from the examples. **After this, upgrades never touch your config again.**
+
+Check nothing of yours is still tracked:
 ```bash
-cp -r prometheus/targets /tmp/targets-backup
+git status --porcelain          # should be empty
+git ls-files prometheus/targets # should list only *.example, mssql.yml, mongodb.yml
 ```
 
 ---
