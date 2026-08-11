@@ -27,6 +27,26 @@ fi
 # Load .env so envsubst can see the vars.
 set -a; . ./.env; set +a
 
+# Docker bind-mounts single config FILES. If one is missing when a container
+# starts, Docker silently creates a root-owned DIRECTORY at that path, and every
+# later run fails confusingly. Catch that here with a clear instruction.
+mounted_files="snmp/snmp.yml blackbox/blackbox.yml mssql/sql_exporter.yml alertmanager/alertmanager.yml"
+bogus=""
+for f in $mounted_files; do
+  [ -d "$f" ] && bogus="${bogus} ${f}"
+done
+if [ -n "$bogus" ]; then
+  echo "ERROR: these should be files, but Docker created them as directories:"
+  for f in $bogus; do echo "    $f"; done
+  echo
+  echo "  This happens when a container starts before the file exists."
+  echo "  Fix (the directories are root-owned, so sudo is needed):"
+  echo "      docker compose down"
+  for f in $bogus; do echo "      sudo rm -rf $f"; done
+  echo "      bash scripts/deploy.sh"
+  exit 1
+fi
+
 # Seed your live config files from the shipped examples the first time only.
 # These are git-ignored, so `git pull` can never overwrite your real IPs/keys.
 for ex in prometheus/targets/*.yml.example snmp/snmp.yml.example; do

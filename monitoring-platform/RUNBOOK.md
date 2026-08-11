@@ -882,6 +882,17 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   6. Reloaded Prometheus after editing `windows.yml`?
      `curl -s -X POST http://localhost:9090/-/reload`
 
+**`cp: cannot create regular file '.../snmp.yml/...': Permission denied`**
+→ Docker turned a config *file* into a root-owned *directory*. That happens when a
+  container starts while the file is missing. `deploy.sh` now detects it; the fix is:
+  ```bash
+  docker compose down
+  sudo rm -rf snmp/snmp.yml      # or whichever path it named
+  bash scripts/deploy.sh         # recreates it from the .example
+  ```
+  Affected paths are the bind-mounted single files: `snmp/snmp.yml`,
+  `blackbox/blackbox.yml`, `mssql/sql_exporter.yml`, `alertmanager/alertmanager.yml`.
+
 **A container keeps restarting**
 → `docker compose logs <name>` (e.g. `mssql-exporter`) shows the reason.
 
