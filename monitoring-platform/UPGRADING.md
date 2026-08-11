@@ -64,6 +64,30 @@ edit (`prometheus/targets/*.yml`, `snmp/snmp.yml`, `servers.conf`, `apis.conf`, 
 are all git-ignored now, so `git pull` cannot touch them. The repo ships `.example`
 templates instead, and `deploy.sh` copies them into place the first time only.
 
+**If `git pull` still refuses**, it names the files. The safe recipe for any of them:
+
+```bash
+# 1. See what actually differs — decide if it's a change YOU made
+git diff -- <the-file>
+
+# 2. Keep a copy just in case, then let git have it
+cp <the-file> ~/monitoring-backup/
+git checkout -- <the-file>
+
+# 3. Retry
+git pull
+```
+
+Files that are safe to discard this way (they're generated or ship as defaults):
+`grafana/dashboards/*.json`, `prometheus/prometheus.yml`, `prometheus/rules/alerts.yml`,
+`docker-compose.yml`. Your real settings live in `.env`, `servers.conf`, `apis.conf`,
+and `prometheus/targets/*.yml` — none of which git touches.
+
+> **Note:** deploys used to re-download the community dashboards every time, which left
+> them permanently "modified" and caused exactly this error. `fetch-dashboards.sh` now
+> only downloads what is **missing** (use `--force` to deliberately refresh), so this
+> stops recurring after this upgrade.
+
 **One-time migration** — needed only if you deployed *before* that change and have
 edited target files. Back up, take the update, restore:
 
