@@ -60,8 +60,15 @@ done
 
 # Render Alertmanager config from template (contains SMTP + webhook secrets).
 command -v envsubst >/dev/null || { echo "ERROR: envsubst not found (install gettext)."; exit 1; }
-envsubst < alertmanager/alertmanager.yml.tmpl > alertmanager/alertmanager.yml
-echo "Rendered alertmanager/alertmanager.yml"
+if [ "${NOTIFICATIONS_ENABLED:-true}" = "false" ]; then
+  envsubst < alertmanager/alertmanager.muted.yml.tmpl > alertmanager/alertmanager.yml
+  echo "Rendered alertmanager/alertmanager.yml  ** NOTIFICATIONS DISABLED **"
+  echo "  Alerts still show in Prometheus/Grafana, but no email or chat is sent."
+  echo "  Set NOTIFICATIONS_ENABLED=true in .env to turn delivery back on."
+else
+  envsubst < alertmanager/alertmanager.yml.tmpl > alertmanager/alertmanager.yml
+  echo "Rendered alertmanager/alertmanager.yml (notifications enabled)"
+fi
 
 # Render sql_exporter config (contains DSN secrets). Supports one or many SQL
 # Servers — from mssql/servers.conf, or MSSQL_DSN in .env for a single server.

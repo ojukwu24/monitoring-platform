@@ -1,0 +1,12 @@
+# Used instead of alertmanager.yml.tmpl when NOTIFICATIONS_ENABLED=false in .env.
+# Alerts still fire and are still visible in Prometheus, Grafana and the
+# Alertmanager UI — they are simply never delivered to email or chat.
+route:
+  receiver: 'null'
+  group_by: ['alertname', 'job', 'env']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 24h
+
+receivers:
+  - name: 'null'

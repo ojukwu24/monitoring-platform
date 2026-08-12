@@ -757,6 +757,71 @@ Want dev alerts to go somewhere else entirely (or nowhere)? Edit
 
 ---
 
+## 6.9 Turning notifications OFF
+
+Four ways, from broadest to narrowest. Pick the narrowest one that fits — in all of
+them **alerts keep working**, they're still visible in Prometheus, Grafana and the
+Alertmanager UI. Only *delivery* stops.
+
+### A. Master switch — stop all email and chat
+
+Best while you're still setting things up, or during planned maintenance.
+
+In `.env`:
+```
+NOTIFICATIONS_ENABLED=false
+```
+then:
+```bash
+bash scripts/deploy.sh
+```
+Deploy confirms with `** NOTIFICATIONS DISABLED **`. Set it back to `true` and redeploy
+to switch delivery on again. Nothing else changes — the NOC dashboard still goes red,
+`smoke-test.sh` still fails, alerts still show at `http://<vm>:9093`.
+
+### B. Silence — mute a specific alert for a set time (recommended day-to-day)
+
+Use this for "we know, we're working on it". It expires by itself, so you can't
+forget to unmute.
+
+**In the browser:** `http://<vm-ip>:9093` → **Silences** → **New Silence**. Add a
+matcher (e.g. `alertname = HostDown`, or `instance = prod-sql-02`), set a duration and
+a comment, then **Create**.
+
+**From the command line:**
+```bash
+# mute one host for 2 hours
+docker compose exec alertmanager amtool silence add instance="10.0.1.11:9100" \
+  --duration=2h --comment="patching" --alertmanager.url=http://localhost:9093
+
+# mute everything for 1 hour (e.g. a planned outage)
+docker compose exec alertmanager amtool silence add alertname=~".*" \
+  --duration=1h --comment="planned maintenance" --alertmanager.url=http://localhost:9093
+
+# see and remove silences
+docker compose exec alertmanager amtool silence query --alertmanager.url=http://localhost:9093
+docker compose exec alertmanager amtool silence expire <silence-id> --alertmanager.url=http://localhost:9093
+```
+
+### C. Turn off one alert rule permanently
+
+If a specific rule is just noise for you, comment it out in
+`prometheus/rules/alerts.yml`, then:
+```bash
+curl -s -X POST http://localhost:9090/-/reload
+```
+Prefer changing its threshold or `for:` duration before deleting it outright.
+
+### D. Quieter non-production
+
+Already the default — `dev`/`staging`/`uat`/`test` alerts go to **email only, never
+chat**, and re-notify daily instead of every 4 hours. See section 6.8.
+
+> **Don't** just stop the Alertmanager container. Prometheus will keep trying to reach
+> it and fill the logs with errors. Use the master switch (A) instead.
+
+---
+
 ## 7. Backups (so you can rebuild if the VM dies)
 
 Two things to save:
@@ -777,6 +842,7 @@ git pull                        # get the latest version of this repo
 bash scripts/deploy.sh          # start / re-apply everything (safe to re-run)
 bash scripts/smoke-test.sh      # health check
 bash scripts/test-alert.sh      # send a test alert (proves email/chat works)
+#   mute everything: set NOTIFICATIONS_ENABLED=false in .env, then deploy.sh
 docker compose ps               # see which programs are running
 docker compose logs prometheus  # read one program's logs (swap the name)
 docker compose restart grafana  # restart one program
@@ -936,7 +1002,10 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
 - **`env`** — label marking which environment a resource belongs to (dev/staging/prod).
   Set in the target files, or taken from the name prefix for SQL Servers and APIs.
 - **SMTP** — the mail server Alertmanager sends alert emails *through* (set in `.env`).
-- **Silence** — temporarily muting a known alert in the Alertmanager UI.
+- **Silence** — temporarily muting a known alert in the Alertmanager UI; it expires
+  automatically (see section 6.9).
+- **`NOTIFICATIONS_ENABLED`** — master switch in `.env`; `false` stops all email/chat
+  delivery while alerts keep working everywhere else.
 - **PASS / FAIL / SKIP** — smoke-test results: healthy / configured-but-down /
   not configured at all (SKIP is normal and never fails the run).
 - **`instance`** — the label identifying which server a metric came from (for SQL
