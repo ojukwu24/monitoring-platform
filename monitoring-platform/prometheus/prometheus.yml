@@ -29,8 +29,7 @@ scrape_configs:
           - /etc/prometheus/targets/node.yml
           - /etc/prometheus/targets/windows.yml
           - /etc/prometheus/targets/kubernetes.yml
-          # MongoDB is opt-in — enable the `mongodb` compose profile and add
-          # /etc/prometheus/targets/mongodb.yml here to scrape it.
+          - /etc/prometheus/targets/mongodb.yml
 
   # SQL Server: one exporter serving MANY SQL Servers. The exporter attaches its
   # own `instance` label (the name from mssql/servers.conf) to each server's
@@ -88,12 +87,6 @@ scrape_configs:
         regex: module
       - target_label: __address__
         replacement: blackbox-exporter:9115
-    # Derive env from the API name (prod-payments-api -> env=prod).
-    metric_relabel_configs:
-      - source_labels: [api]
-        regex: '(prod|production|stage|staging|uat|test|dev)[-_].*'
-        target_label: env
-        replacement: '$1'
 
   # Blackbox: uptime/synthetic probes, also multi-target.
   - job_name: blackbox

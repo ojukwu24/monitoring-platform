@@ -14,8 +14,8 @@ Grafana is the display; Prometheus, Alertmanager, and Loki are the engine.
 | Linux hosts | node_exporter |
 | Windows hosts | windows_exporter |
 | Kubernetes | kube-state-metrics (scraped from outside) |
-| SQL Server (one or many) | sql_exporter |
-| MongoDB (opt-in) | mongodb_exporter — enable the `mongodb` compose profile |
+| SQL Server (one or many, optional) | sql_exporter |
+| MongoDB (one or many, opt-in) | mongodb_exporter — one per server |
 | Network gear | snmp_exporter |
 | Endpoint / uptime | blackbox_exporter |
 | API endpoints (API key / bearer auth) | blackbox_exporter, probed every 60s |

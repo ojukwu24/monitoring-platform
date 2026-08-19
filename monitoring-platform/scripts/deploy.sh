@@ -77,6 +77,9 @@ bash scripts/render-mssql-config.sh
 # Render blackbox modules + probe targets for API endpoints (holds API keys).
 bash scripts/render-api-config.sh
 
+# Render one exporter per MongoDB server + its scrape targets (holds passwords).
+bash scripts/render-mongodb-config.sh
+
 # Fetch dashboards (idempotent).
 bash scripts/fetch-dashboards.sh
 

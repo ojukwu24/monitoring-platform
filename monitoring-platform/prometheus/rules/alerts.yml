@@ -47,7 +47,23 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "MongoDB exporter cannot reach MongoDB ({{ $labels.instance }})"
+          summary: "MongoDB {{ $labels.instance }} is unreachable"
+
+      - alert: MongoDBHighConnections
+        expr: mongodb_ss_connections{conn_type="current"} > 5000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MongoDB {{ $labels.instance }} has {{ $value }} open connections"
+
+      - alert: MongoDBQueuedOperations
+        expr: sum by(instance) (mongodb_ss_globalLock_currentQueue) > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MongoDB {{ $labels.instance }} has {{ $value }} queued operations"
 
   - name: mssql
     rules:

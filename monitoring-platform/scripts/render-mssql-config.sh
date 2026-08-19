@@ -9,6 +9,16 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# SQL Server is only monitored when COMPOSE_PROFILES includes "mssql".
+case ",${COMPOSE_PROFILES:-}," in
+  *,mssql,*) ;;
+  *)
+    printf '%s
+' "# GENERATED — SQL Server monitoring is OFF (COMPOSE_PROFILES has no 'mssql')."       > prometheus/targets/mssql.yml
+    echo "SQL Server monitoring disabled (COMPOSE_PROFILES has no 'mssql') — no targets scraped."
+    exit 0 ;;
+esac
+
 CONF="mssql/servers.conf"
 OUT="mssql/sql_exporter.yml"
 TMP="${OUT}.tmp"

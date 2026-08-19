@@ -89,8 +89,9 @@ Now open `.env` in an editor (`nano .env`) and change **at least these**:
   ```
   Replace `mon_user`, `YourPass`, and `192.168.1.50` with your real values.
 
-Leave everything else as-is for now. **Do not touch `COMPOSE_PROFILES`** — leaving it
-empty is what keeps MongoDB off.
+Leave everything else as-is for now. `COMPOSE_PROFILES=mssql` means "monitor SQL
+Server, not MongoDB" — see [section 4](#4-choosing-which-databases-to-monitor-sql-server--mongodb-on-or-off)
+to change that later.
 
 > **Got more than one SQL Server?** Skip `MSSQL_DSN` and list them all in
 > `mssql/servers.conf` instead — one exporter covers any number of servers.
@@ -267,19 +268,66 @@ a deployment pipeline.
 
 ---
 
-## 4. Turning MongoDB ON later (only if you also run MongoDB)
+## 4. Choosing which databases to monitor (SQL Server / MongoDB on or off)
 
-You don't need this for your test. When you *do* need MongoDB one day:
+One setting controls both: **`COMPOSE_PROFILES`** in `.env`.
 
-1. In `.env`, set `COMPOSE_PROFILES=mongodb` and fill in `MONGODB_URI`.
-2. In `prometheus/prometheus.yml`, add this line back under `files:`
-   (there's a comment there showing where):
-   ```
-   - /etc/prometheus/targets/mongodb.yml
-   ```
-3. Re-run `bash scripts/deploy.sh`.
+| `COMPOSE_PROFILES=` | What runs |
+|---|---|
+| `mssql` | SQL Server only *(default)* |
+| `mongodb` | MongoDB only |
+| `mssql,mongodb` | both |
+| *(empty)* | neither |
 
----
+Turning one off **stops its exporter and removes its scrape targets**, so you get no
+false "down" alerts and no empty red tiles. Apply any change with:
+```bash
+bash scripts/deploy.sh
+```
+
+### Turning SQL Server OFF
+```
+COMPOSE_PROFILES=
+```
+(or `COMPOSE_PROFILES=mongodb` if you want Mongo instead). Deploy confirms with
+`SQL Server monitoring disabled ... no targets scraped.`
+
+### Turning MongoDB ON
+
+**One server** — set `MONGODB_URI` in `.env` and add `mongodb` to `COMPOSE_PROFILES`.
+
+**Several servers (dev / staging / prod)** — list them instead:
+```bash
+cp mongodb/servers.conf.example mongodb/servers.conf
+nano mongodb/servers.conf
+```
+One per line, `|`-separated:
+```
+prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017 | env=prod
+staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017 | env=staging
+dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017 | env=dev
+```
+Then set `COMPOSE_PROFILES=mssql,mongodb` (or just `mongodb`) and run
+`bash scripts/deploy.sh`.
+
+Each server gets its own small exporter container with an auto-assigned port — you
+don't manage any of that. The `env=` field feeds the **Environment** filter on the
+dashboards.
+
+On **each** MongoDB, create the read-only monitoring user:
+```javascript
+db.getSiblingDB("admin").createUser({
+  user: "mon_user", pwd: "Pass1",
+  roles: [{ role: "clusterMonitor", db: "admin" }]
+})
+```
+
+Check it worked: **Dashboards → Monitoring → MongoDB**, or
+```bash
+curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=mongodb_up'
+```
+
+`servers.conf` holds passwords, so it is **git-ignored** — back it up separately.
 
 ## 5. Adding a server to watch (do this per machine you actually have)
 
@@ -480,6 +528,7 @@ the API server — the monitoring VM just calls the URL.
    | `content-type=text/xml` | override the body's content type (e.g. SOAP/XML) |
    | `expect=200,202` | which status codes count as healthy (default: any 2xx) |
    | `match=<regexp>` | the **response body must match**, else the probe fails |
+   | `env=prod` | which environment this API belongs to — drives the Environment filter |
    | `insecure=true` | skip TLS verification (self-signed certificates) |
    | `timeout=20s` | per-probe timeout (default `10s`) |
 
@@ -501,6 +550,8 @@ the API server — the monitoring VM just calls the URL.
 
 Notes:
 - `apis.conf` holds API keys → **git-ignored**. Back it up separately.
+- Add `| env=prod` (or `staging`/`dev`) to each line so APIs appear under the
+  **Environment** filter. Without it an API still works, it just shows only under **All**.
 - Alerts you get for free: **ApiDown** (critical, 2m), **ApiUnauthorized** (critical —
   401/403, i.e. the key expired or was revoked), **ApiSlow** (warning — over 5s for 10m).
 - Test a probe by hand before adding it, e.g. for the POST example:
@@ -514,8 +565,8 @@ Notes:
 - The generated blackbox config is `blackbox/blackbox.yml` (do not edit by hand —
   edit `apis.conf` and re-run `deploy.sh`).
 
-### 5g. MongoDB (only if you also run MongoDB)
-Off by default. See **[section 4](#4-turning-mongodb-on-later-only-if-you-also-run-mongodb)**.
+### 5g. MongoDB (one server or many)
+Off by default. See **[section 4](#4-choosing-which-databases-to-monitor-sql-server--mongodb-on-or-off)**.
 
 ---
 
@@ -1020,5 +1071,6 @@ Prometheus' `remote_write` at Grafana Mimir using that `tenant` label as the ten
   Server it's the name you chose in `servers.conf`).
 - **`.env`** — your private settings file (passwords, addresses). Never shared/committed.
 - **Reload** — telling Prometheus to re-read its target files without a full restart.
-- **Compose profile** — an on/off switch for optional parts (MongoDB is behind one).
+- **Compose profile** — an on/off switch for optional parts. `COMPOSE_PROFILES` in
+  `.env` decides whether SQL Server and/or MongoDB are monitored (section 4).
 - **Tenant** — a name for this deployment (a team, environment, or client). Stamped on all data as a label.

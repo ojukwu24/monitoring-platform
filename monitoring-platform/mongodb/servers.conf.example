@@ -1,0 +1,21 @@
+# MongoDB servers to monitor — ONE PER LINE, fields separated by |
+#
+#   <name> | <URI> [| env=<environment>]
+#
+#   <name>  short label, no spaces — shown in Grafana (letters, digits, - _)
+#   <URI>   mongodb://user:pass@host:27017   (user needs the clusterMonitor role)
+#   env=    which environment this server belongs to (dev / staging / prod).
+#           Optional, but it drives the Environment filter on the dashboards.
+#
+# Each server gets its own small exporter container, assigned a port automatically.
+#
+# Copy this file to  servers.conf  and edit it:
+#     cp mongodb/servers.conf.example mongodb/servers.conf
+# Then set COMPOSE_PROFILES to include "mongodb" in .env and run:
+#     bash scripts/deploy.sh
+#
+# servers.conf is git-ignored because it contains passwords.
+
+prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017 | env=prod
+staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017 | env=staging
+dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017 | env=dev

@@ -14,6 +14,7 @@
 #            content-type=text/xml  overrides the body's content type
 #            expect=200,201         status codes counted as healthy (default: any 2xx)
 #            match=<regexp>         response body must match this, else the probe fails
+#            env=prod               which environment this API belongs to (dev/staging/prod)
 #            insecure=true          skip TLS certificate verification (self-signed certs)
 #            timeout=20s            per-probe timeout (default 10s)
 #
@@ -58,7 +59,7 @@ if [ -f "$CONF" ]; then
     case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: API name '$name' — use letters, digits, - or _ only." >&2; exit 1 ;; esac
     case "$url" in http://*|https://*) ;; *) echo "ERROR: URL for '$name' must start with http:// or https://" >&2; exit 1 ;; esac
 
-    method="GET"; body=""; ctype=""; expect=""; match=""; insecure=""; timeout="10s"
+    method="GET"; body=""; ctype=""; expect=""; match=""; insecure=""; timeout="10s"; envv=""
     headers=()
 
     for ((i = 2; i < ${#parts[@]}; i++)); do
@@ -74,6 +75,7 @@ if [ -f "$CONF" ]; then
         match)                   match="$val" ;;
         insecure)                insecure="$val" ;;
         timeout)                 timeout="$val" ;;
+        env)                     envv="$val" ;;
         *)
           case "$f" in
             *:*) headers+=("$f") ;;
@@ -126,6 +128,7 @@ if [ -f "$CONF" ]; then
       echo "    job: api"
       echo "    api: '${name}'"
       echo "    module: 'api_${name}'"
+      [ -n "$envv" ] && echo "    env: '${envv}'"
     } >> "${TARGETS}.tmp"
 
     count=$((count + 1))

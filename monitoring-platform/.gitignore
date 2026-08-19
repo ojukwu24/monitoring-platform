@@ -18,3 +18,7 @@ prometheus/targets/kubernetes.yml
 prometheus/targets/snmp.yml
 prometheus/targets/blackbox.yml
 snmp/snmp.yml
+mongodb/servers.conf
+prometheus/targets/mssql.yml
+prometheus/targets/mongodb.yml
+docker-compose.override.yml

@@ -1,5 +1,0 @@
-# mongodb_exporter runs as a compose service; Prometheus scrapes it here.
-- targets:
-    - 'mongodb-exporter:9216'
-  labels:
-    job: mongodb
