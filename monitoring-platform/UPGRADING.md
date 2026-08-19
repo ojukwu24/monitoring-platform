@@ -16,12 +16,50 @@ container images, applies changes, and leaves everything else alone.
 
 ---
 
+## ⚠️ Version notes — check these when upgrading
+
+### `COMPOSE_PROFILES` now chooses which databases are monitored
+
+Previously it was only used to switch MongoDB on. It is now the on/off switch for
+**both** databases, so an **empty** value means *"monitor no databases"* — if your
+`.env` has `COMPOSE_PROFILES=` (empty) and you monitor SQL Server, it will silently
+stop being scraped.
+
+Fix it before deploying:
+
+```bash
+# set it to mssql whether the line already exists or not
+if grep -q '^COMPOSE_PROFILES=' .env; then
+  sed -i 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=mssql/' .env
+else
+  echo 'COMPOSE_PROFILES=mssql' >> .env
+fi
+grep '^COMPOSE_PROFILES=' .env      # expect: COMPOSE_PROFILES=mssql
+```
+
+Values: `mssql` · `mongodb` · `mssql,mongodb` · *(empty = neither)*.
+
+### The MongoDB dashboard was replaced
+
+The old bundled one was a 2016-era community dashboard that renders blank on current
+Grafana. It is now a purpose-built dashboard, and MongoDB supports **many servers**
+via `mongodb/servers.conf`. Nothing to do unless you monitor MongoDB.
+
+### APIs now take an explicit environment
+
+Environment used to be guessed from the API's name prefix. Add `| env=prod` (or
+`staging`/`dev`) to each line in `blackbox/apis.conf` so APIs appear under the
+**Environment** filter. Existing lines keep working without it — they just show only
+under **All**.
+
+---
+
 ## What is preserved (you will not lose anything)
 
 | Thing | Kept? | Why |
 |---|---|---|
 | Your `.env` | ✅ | git-ignored — `git pull` never touches it |
-| `mssql/servers.conf`, `blackbox/apis.conf` | ✅ | git-ignored |
+| `mssql/servers.conf`, `mongodb/servers.conf`, `blackbox/apis.conf` | ✅ | git-ignored |
 | `snmp/snmp.yml` (community string) | ✅ | git-ignored (seeded from `.example`) |
 | Your target lists (`prometheus/targets/*.yml`) | ✅ | git-ignored (seeded from `.example`) |
 | Metrics history | ✅ | lives in the `prometheus_data` Docker volume |
@@ -60,7 +98,7 @@ error: Your local changes to the following files would be overwritten by merge
 ```
 
 **As of the "untrack live config" change this should no longer happen** — the files you
-edit (`prometheus/targets/*.yml`, `snmp/snmp.yml`, `servers.conf`, `apis.conf`, `.env`)
+edit (`prometheus/targets/*.yml`, `snmp/snmp.yml`, `*/servers.conf`, `apis.conf`, `.env`)
 are all git-ignored now, so `git pull` cannot touch them. The repo ships `.example`
 templates instead, and `deploy.sh` copies them into place the first time only.
 
@@ -99,7 +137,7 @@ mkdir -p ~/monitoring-backup
 cp -r prometheus/targets ~/monitoring-backup/
 cp snmp/snmp.yml ~/monitoring-backup/ 2>/dev/null
 cp .env ~/monitoring-backup/
-cp mssql/servers.conf blackbox/apis.conf ~/monitoring-backup/ 2>/dev/null
+cp mssql/servers.conf mongodb/servers.conf blackbox/apis.conf ~/monitoring-backup/ 2>/dev/null
 
 # 2. Let git replace the now-renamed tracked files (your copies are backed up)
 git checkout -- prometheus/targets snmp blackbox 2>/dev/null
@@ -120,7 +158,7 @@ seeded fresh from the examples. **After this, upgrades never touch your config a
 Check nothing of yours is still tracked:
 ```bash
 git status --porcelain          # should be empty
-git ls-files prometheus/targets # should list only *.example, mssql.yml, mongodb.yml
+git ls-files prometheus/targets # should list only *.example files
 ```
 
 ---
@@ -137,7 +175,8 @@ Most of the time just run `deploy.sh`. If you want the minimum action:
 | Your target files | `curl -s -X POST http://localhost:9090/-/reload` |
 | `docker-compose.yml` (new service, new image tag) | `bash scripts/deploy.sh` |
 | Alertmanager routing / `.env` secrets | `bash scripts/deploy.sh` (then `bash scripts/test-alert.sh` to confirm email still works) |
-| `mssql/servers.conf` | `bash scripts/deploy.sh` |
+| `mssql/servers.conf`, `mongodb/servers.conf`, `blackbox/apis.conf` | `bash scripts/deploy.sh` |
+| `COMPOSE_PROFILES` (which databases run) | `bash scripts/deploy.sh` |
 
 ---
 

@@ -16,7 +16,7 @@ cp .env.example .env
 #      TENANT=acme
 #      GF_ADMIN_PASSWORD=<your password>
 #      MSSQL_DSN='sqlserver://mon_user:YourPass@<sql-host>:1433?database=master&encrypt=disable'
-#    (keep MSSQL_DSN single-quoted; leave COMPOSE_PROFILES empty = MongoDB stays off)
+#    (keep MSSQL_DSN single-quoted; COMPOSE_PROFILES=mssql means "SQL Server, no MongoDB")
 
 # 2b. MORE THAN ONE SQL Server? List them instead of using MSSQL_DSN:
 #      cp mssql/servers.conf.example mssql/servers.conf
@@ -48,6 +48,10 @@ you just haven't added those yet. Only `SQL Servers` matters for this test.
 The test names each resource, so `DOWN prod-sql-02` tells you exactly what to fix.
 
 **Add more later:** see RUNBOOK section 5 (one recipe per server type).
+
+**Databases on/off:** `COMPOSE_PROFILES` in `.env` — `mssql`, `mongodb`, `mssql,mongodb`,
+or empty for neither. For several MongoDB servers use `mongodb/servers.conf`.
+See RUNBOOK section 4.
 
 **Turn on email alerts:** set the `SMTP_*` and `ALERT_EMAIL_TO` values in `.env`,
 run `bash scripts/deploy.sh`, then prove it works with `bash scripts/test-alert.sh`
