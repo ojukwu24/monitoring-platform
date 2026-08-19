@@ -721,13 +721,21 @@ Apply with `bash scripts/deploy.sh`.
 
 ### Step 3 — Use the filter
 
-The **🚦 NOC Overview** dashboard now has an **Environment** dropdown at the top:
+**Every dashboard** has an **Environment** dropdown at the top-left — the NOC Overview,
+SQL Server, Node Exporter Full, Windows Exporter, Blackbox, SNMP, Kubernetes and
+MongoDB:
 
-- **All** — everything, all three environments on one screen (good for the office TV).
+- **All** — everything, all environments on one screen (good for the office TV).
 - **prod** — production only. Handy on a second screen, or when triaging.
-- Pick two (e.g. `prod` + `staging`) to compare.
+- Pick two (e.g. `prod` + `staging`) to compare side by side.
 
-Anything without an `env` label still appears under **All**.
+It is multi-select, defaults to **All**, and the list fills itself from whatever
+environments actually exist. Anything without an `env` label still appears under
+**All**, so nothing is ever hidden by accident.
+
+On the per-resource dashboards the Environment picker also **narrows the host/server
+dropdown next to it** — choose `staging` and the server list shows only staging
+servers, so you can't pick a prod box by mistake.
 
 ### Step 4 — Alerts are already routed sensibly
 

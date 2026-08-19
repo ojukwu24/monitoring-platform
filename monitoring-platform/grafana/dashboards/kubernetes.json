@@ -3390,6 +3390,27 @@
   "templating": {
     "list": [
       {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
+      {
         "current": {
           "text": "Prometheus",
           "value": "prometheus",
@@ -3421,7 +3442,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(kube_node_info,cluster)",
+          "query": "label_values(kube_node_info{env=~\"$env\"}, cluster)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

@@ -927,6 +927,27 @@
   "templating": {
     "list": [
       {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
+      {
         "auto": true,
         "auto_count": 10,
         "auto_min": "10s",
@@ -1023,7 +1044,7 @@
         "multi": true,
         "name": "target",
         "options": [],
-        "query": "label_values(probe_success, instance)",
+        "query": "label_values(probe_success{env=~\"$env\"}, instance)",
         "refresh": 1,
         "regex": "",
         "sort": 0,

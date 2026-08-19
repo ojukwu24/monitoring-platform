@@ -15412,6 +15412,27 @@
   "templating": {
     "list": [
       {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
+      {
         "current": {
           "text": "Prometheus",
           "value": "prometheus",
@@ -15438,7 +15459,7 @@
         "name": "job",
         "options": [],
         "query": {
-          "query": "label_values(node_uname_info, job)",
+          "query": "label_values(node_uname_info{env=~\"$env\"}, job)",
           "refId": "Prometheus-job-Variable-Query"
         },
         "refresh": 1,
@@ -15458,7 +15479,7 @@
         "name": "nodename",
         "options": [],
         "query": {
-          "query": "label_values(node_uname_info{job=\"$job\"}, nodename)",
+          "query": "label_values(node_uname_info{job=\"$job\", env=~\"$env\"}, nodename)",
           "refId": "Prometheus-nodename-Variable-Query"
         },
         "refresh": 1,
@@ -15478,7 +15499,7 @@
         "name": "node",
         "options": [],
         "query": {
-          "query": "label_values(node_uname_info{job=\"$job\", nodename=\"$nodename\"}, instance)",
+          "query": "label_values(node_uname_info{job=\"$job\", nodename=\"$nodename\", env=~\"$env\"}, instance)",
           "refId": "Prometheus-node-Variable-Query"
         },
         "refresh": 1,

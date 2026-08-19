@@ -87,7 +87,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sysUpTime{job=\"$Job\"} * 10",
+          "expr": "sysUpTime{job=\"$Job\", env=~\"$env\"} * 10",
           "legendFormat": "In",
           "refId": "A"
         }
@@ -174,7 +174,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "max(irate(ifHCOutOctets{job=\"$Job\"}[5m]))",
+          "expr": "max(irate(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[5m]))",
           "instant": false,
           "legendFormat": "Out",
           "refId": "A"
@@ -262,7 +262,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "max(irate(ifHCInOctets{job=\"$Job\"}[5m]))",
+          "expr": "max(irate(ifHCInOctets{job=\"$Job\", env=~\"$env\"}[5m]))",
           "legendFormat": "In",
           "refId": "A"
         }
@@ -349,7 +349,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "max(delta(ifHCOutOctets{job=\"$Job\"}[$__range]))",
+          "expr": "max(delta(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[$__range]))",
           "legendFormat": "Out",
           "refId": "A"
         }
@@ -436,7 +436,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "max(delta(ifHCInOctets{job=\"$Job\"}[$__range]))",
+          "expr": "max(delta(ifHCInOctets{job=\"$Job\", env=~\"$env\"}[$__range]))",
           "instant": false,
           "legendFormat": "In",
           "refId": "A"
@@ -612,35 +612,35 @@
       ],
       "targets": [
         {
-          "expr": "irate(ifHCOutOctets{job=\"$Job\"}[5m])",
+          "expr": "irate(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "format": "table",
           "instant": true,
           "legendFormat": "out",
           "refId": "A"
         },
         {
-          "expr": "irate(ifHCInOctets{job=\"$Job\"}[5m])",
+          "expr": "irate(ifHCInOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "format": "table",
           "instant": true,
           "legendFormat": "in",
           "refId": "B"
         },
         {
-          "expr": "delta(ifHCOutOctets{job=\"$Job\"}[$__range])",
+          "expr": "delta(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[$__range])",
           "format": "table",
           "instant": true,
           "legendFormat": "total out",
           "refId": "C"
         },
         {
-          "expr": "delta(ifHCInOctets{job=\"$Job\"}[$__range])",
+          "expr": "delta(ifHCInOctets{job=\"$Job\", env=~\"$env\"}[$__range])",
           "format": "table",
           "instant": true,
           "legendFormat": "total in",
           "refId": "D"
         },
         {
-          "expr": "ifHighSpeed{job=\"$Job\"}",
+          "expr": "ifHighSpeed{job=\"$Job\", env=~\"$env\"}",
           "format": "table",
           "instant": true,
           "legendFormat": "high speed",
@@ -694,7 +694,7 @@
       "pluginVersion": "6.3.2",
       "targets": [
         {
-          "expr": "irate(ifHCOutOctets{job=\"$Job\"}[5m])",
+          "expr": "irate(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "intervalFactor": 1,
           "legendFormat": "{{ifName}} ({{ifAlias}})",
           "refId": "B"
@@ -746,7 +746,7 @@
       "pluginVersion": "6.3.2",
       "targets": [
         {
-          "expr": "irate(ifHCOutOctets{job=\"$Job\"}[5m])",
+          "expr": "irate(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "intervalFactor": 1,
           "legendFormat": "{{ifName}} ({{ifAlias}})",
           "refId": "B"
@@ -804,14 +804,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "irate(ifHCOutOctets{job=\"$Job\"}[5m])",
+          "expr": "irate(ifHCOutOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "instant": false,
           "intervalFactor": 1,
           "legendFormat": "Out: {{ifName}} ({{ifAlias}})",
           "refId": "A"
         },
         {
-          "expr": "-irate(ifHCInOctets{job=\"$Job\"}[5m])",
+          "expr": "-irate(ifHCInOctets{job=\"$Job\", env=~\"$env\"}[5m])",
           "intervalFactor": 1,
           "legendFormat": "In: {{ifName}} ({{ifAlias}})",
           "refId": "B"
@@ -868,6 +868,27 @@
   ],
   "templating": {
     "list": [
+      {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
       {
         "allValue": null,
         "current": {},

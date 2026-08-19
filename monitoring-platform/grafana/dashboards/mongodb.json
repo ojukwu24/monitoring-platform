@@ -46,7 +46,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(mongodb_op_counters_total{instance=~\"$env\"}[$interval])",
+              "expr": "rate(mongodb_op_counters_total{instance=~\"$instance\"}[$interval])",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -128,7 +128,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(mongodb_metrics_document_total{instance=~\"$env\"}[$interval])",
+              "expr": "rate(mongodb_metrics_document_total{instance=~\"$instance\"}[$interval])",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -205,7 +205,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(mongodb_metrics_query_executor_total{instance=~\"$env\"}[$interval])",
+              "expr": "rate(mongodb_metrics_query_executor_total{instance=~\"$instance\"}[$interval])",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -255,7 +255,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Query Metrics for $env",
+      "title": "Query Metrics for $instance",
       "titleSize": "h4"
     },
     {
@@ -294,7 +294,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "mongodb_replset_number_of_members{instance=~\"$env\"}",
+              "expr": "mongodb_replset_number_of_members{instance=~\"$instance\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -303,7 +303,7 @@
               "step": 600
             },
             {
-              "expr": "sum(mongodb_replset_member_health{instance=~\"$env\"})",
+              "expr": "sum(mongodb_replset_member_health{instance=~\"$instance\"})",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -384,7 +384,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "mongodb_replset_member_state{instance=~\"$env\"}",
+              "expr": "mongodb_replset_member_state{instance=~\"$instance\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -463,7 +463,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(mongodb_op_counters_repl_total{instance=~\"$env\"}[$interval])",
+              "expr": "rate(mongodb_op_counters_repl_total{instance=~\"$instance\"}[$interval])",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -513,7 +513,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Replica Set Metrics for $env",
+      "title": "Replica Set Metrics for $instance",
       "titleSize": "h4"
     },
     {
@@ -577,7 +577,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "mongodb_instance_uptime_seconds{instance=~\"$env\"}",
+              "expr": "mongodb_instance_uptime_seconds{instance=~\"$instance\"}",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -655,7 +655,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "mongodb_connections{instance=~\"$env\",state=\"available\"}",
+              "expr": "mongodb_connections{instance=~\"$instance\",state=\"available\"}",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -733,7 +733,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "mongodb_connections{instance=~\"$env\",state=\"current\"}",
+              "expr": "mongodb_connections{instance=~\"$instance\",state=\"current\"}",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "",
@@ -760,7 +760,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Health metrics for $env",
+      "title": "Health metrics for $instance",
       "titleSize": "h4"
     },
     {
@@ -799,7 +799,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "mongodb_replset_oplog_size_bytes{instance=~\"$env\"}",
+              "expr": "mongodb_replset_oplog_size_bytes{instance=~\"$instance\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -881,7 +881,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "mongodb_memory{instance=~\"$env\",type=~\"resident|virtual\"}",
+              "expr": "mongodb_memory{instance=~\"$instance\",type=~\"resident|virtual\"}",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -960,7 +960,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "rate(mongodb_network_bytes_total{instance=~\"$env\"}[$interval])",
+              "expr": "rate(mongodb_network_bytes_total{instance=~\"$instance\"}[$interval])",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -1448,16 +1448,37 @@
   "templating": {
     "list": [
       {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
+      {
         "allValue": null,
         "current": {},
         "datasource": "prometheus",
         "hide": 0,
         "includeAll": true,
-        "label": "env",
+        "label": "Instance",
         "multi": true,
-        "name": "env",
+        "name": "instance",
         "options": [],
-        "query": "label_values(mongodb_connections, instance)",
+        "query": "label_values(mongodb_connections{env=~\"$env\"}, instance)",
         "refresh": 1,
         "regex": "",
         "sort": 1,

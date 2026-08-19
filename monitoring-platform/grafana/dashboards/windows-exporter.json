@@ -2480,6 +2480,27 @@
   "templating": {
     "list": [
       {
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
+      },
+      {
         "auto": false,
         "auto_count": 500,
         "auto_min": "30s",
@@ -2514,7 +2535,7 @@
         "multi": false,
         "name": "server",
         "options": [],
-        "query": "label_values(windows_cpu_time_total, instance)",
+        "query": "label_values(windows_cpu_time_total{env=~\"$env\"}, instance)",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

@@ -24,7 +24,7 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "query": "label_values(up, env)",
+        "query": "label_values(env)",
         "refresh": 1,
         "includeAll": true,
         "multi": true,
@@ -34,7 +34,8 @@
           "value": "$__all",
           "selected": true
         },
-        "options": []
+        "options": [],
+        "description": "Filter this dashboard to one or more environments"
       }
     ]
   },
