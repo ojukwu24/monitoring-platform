@@ -492,78 +492,116 @@ Notes:
 - Alerts fire **per server** and name it, e.g. "SQL Server unreachable … prod-sql-02".
 
 ### 5f-3. API endpoints (with an API key / bearer token)
-Probed every 60 seconds. A 2xx response = UP; anything else = DOWN. No agent needed on
-the API server — the monitoring VM just calls the URL.
 
-1. Create the list (first time only):
-   ```bash
-   cp blackbox/apis.conf.example blackbox/apis.conf
-   ```
-2. Edit `blackbox/apis.conf` — one API per line, fields separated by `|`:
-   ```
-   <name> | <url> [| <Header>: <value>] [| <option>=<value>] ...
-   ```
-   `<name>` is the label you'll see in Grafana (letters, digits, `-`, `_`).
-   Any field containing `:` is sent as a **request header** (you can list several).
+The monitoring VM calls your API every 60 seconds. **A 2xx response = UP, anything else
+= DOWN.** Nothing gets installed on the API server.
 
-   **GET examples:**
-   ```
-   payments-api | https://api.example.com/health   | X-API-Key: abc123
-   orders-api   | https://orders.example.com/ping  | Authorization: Bearer eyJhbGciOi...
-   public-api   | https://status.example.com/health
-   ```
+#### Step 1 — Create the list (first time only)
+```bash
+cp blackbox/apis.conf.example blackbox/apis.conf
+nano blackbox/apis.conf
+```
 
-   **POST with a body** — add `method=POST` and `body=`. A body sets
-   `Content-Type: application/json` automatically:
-   ```
-   search-api | https://api.example.com/v1/search | X-API-Key: abc123 | method=POST | body={"query":"health-check","limit":1}
-   ```
+#### Step 2 — Add one line per API
 
-   **All available options:**
+Each line has **three parts separated by `|`**:
 
-   | Option | What it does |
-   |---|---|
-   | `method=POST` | HTTP verb (default `GET`) |
-   | `body={"a":1}` | request body; implies JSON content type |
-   | `content-type=text/xml` | override the body's content type (e.g. SOAP/XML) |
-   | `expect=200,202` | which status codes count as healthy (default: any 2xx) |
-   | `match=<regexp>` | the **response body must match**, else the probe fails |
-   | `env=prod` | which environment this API belongs to — drives the Environment filter |
-   | `insecure=true` | skip TLS verification (self-signed certificates) |
-   | `timeout=20s` | per-probe timeout (default `10s`) |
+```
+name | url | extras
+```
 
-   Combining them — POST, accept 200 or 202, and require `"status":"ok"` in the reply:
-   ```
-   jobs-api | https://api.example.com/v1/jobs | Authorization: Bearer tok | method=POST | body={"type":"noop"} | expect=200,202 | match="status"\s*:\s*"ok"
-   ```
+| Part | What it is | Example |
+|---|---|---|
+| **name** | the label you'll see in Grafana | `payments-api` |
+| **url** | the address to call | `https://api.example.com/health` |
+| **extras** | API key, environment, POST settings… | `X-API-Key: abc123` |
 
-   ⚠️ A body **cannot contain the `|` character** — it separates the fields.
-3. Apply:
-   ```bash
-   bash scripts/deploy.sh
-   ```
-4. Check: **🚦 NOC Overview → 🔌 API Endpoints** shows a green/red tile per API, its
-   response time, and its HTTP status code. Verify from the command line with:
-   ```bash
-   curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=probe_success{job="api"}'
-   ```
+The simplest possible line — a public URL, nothing else:
+```
+public-api | https://status.example.com/health
+```
 
-Notes:
-- `apis.conf` holds API keys → **git-ignored**. Back it up separately.
-- Add `| env=prod` (or `staging`/`dev`) to each line so APIs appear under the
-  **Environment** filter. Without it an API still works, it just shows only under **All**.
-- Alerts you get for free: **ApiDown** (critical, 2m), **ApiUnauthorized** (critical —
-  401/403, i.e. the key expired or was revoked), **ApiSlow** (warning — over 5s for 10m).
-- Test a probe by hand before adding it, e.g. for the POST example:
+With an API key (anything containing a `:` is sent as a request header):
+```
+payments-api | https://api.example.com/health | X-API-Key: abc123
+```
+
+#### Step 3 — Say which environment it belongs to  ⭐
+
+**Add `| env=prod` (or `env=staging`, `env=dev`) to every line.** This is what puts the
+API under the **Environment** dropdown on the dashboards. Same API in three
+environments looks like this:
+
+```
+payments-prod    | https://api.example.com/health         | X-API-Key: key1 | env=prod
+payments-staging | https://api-staging.example.com/health | X-API-Key: key2 | env=staging
+payments-dev     | https://api-dev.example.com/health     | X-API-Key: key3 | env=dev
+```
+
+Now picking **prod** on any dashboard shows only `payments-prod`.
+
+**If you leave `env=` out**, the API still works perfectly — it just won't appear when
+you filter to a specific environment. It only shows under **All**. So if an API seems to
+"disappear" when you pick an environment, a missing `env=` is why.
+
+#### Step 4 — Apply
+```bash
+bash scripts/deploy.sh
+```
+
+#### Step 5 — Check it
+**🚦 NOC Overview → 🔌 API Endpoints** shows a green/red tile per API, its response time
+and HTTP status code. Or from the command line:
+```bash
+curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=probe_success{job="api"}'
+```
+`1` = UP, `0` = DOWN, one result per API.
+
+---
+
+#### POST requests and other options
+
+Everything after the URL is optional and can be combined in any order:
+
+| Option | What it does |
+|---|---|
+| `env=prod` | **which environment** — drives the Environment filter (see Step 3) |
+| `method=POST` | HTTP verb (default `GET`) |
+| `body={"a":1}` | request body; sets `Content-Type: application/json` automatically |
+| `content-type=text/xml` | override the body's content type (e.g. SOAP/XML) |
+| `expect=200,202` | which status codes count as healthy (default: any 2xx) |
+| `match=<regexp>` | the **response body must match**, else the probe fails |
+| `insecure=true` | skip TLS verification (self-signed certificates) |
+| `timeout=20s` | per-probe timeout (default `10s`) |
+
+A POST with a JSON body, in production:
+```
+search-api | https://api.example.com/v1/search | X-API-Key: abc123 | method=POST | body={"query":"ping","limit":1} | env=prod
+```
+
+Everything at once — POST, accept 200 or 202, and require `"status":"ok"` in the reply:
+```
+jobs-api | https://api.example.com/v1/jobs | Authorization: Bearer tok | method=POST | body={"type":"noop"} | expect=200,202 | match="status"\s*:\s*"ok" | env=prod
+```
+
+⚠️ A body **cannot contain the `|` character** — it separates the fields.
+
+---
+
+#### Good to know
+
+- **`apis.conf` holds your API keys** → it is **git-ignored**. Back it up separately.
+- **Alerts you get free:** **ApiDown** (critical, after 2 min), **ApiUnauthorized**
+  (critical — a 401/403 means the key expired or was revoked), **ApiSlow** (warning —
+  slower than 5s for 10 min).
+- **Test by hand first.** If this returns 2xx, the monitor will show UP:
   ```bash
-  curl -i -X POST -H 'X-API-Key: abc123' -H 'Content-Type: application/json' \
-       -d '{"query":"health-check","limit":1}' https://api.example.com/v1/search
+  curl -i -H 'X-API-Key: abc123' https://api.example.com/health
   ```
-  If that returns 2xx, the monitor will show UP.
-- Use a **read-only / no-side-effect** endpoint for POST probes — it runs every 60s.
-  A health, ping, or search endpoint is ideal; never a "create order" endpoint.
-- The generated blackbox config is `blackbox/blackbox.yml` (do not edit by hand —
-  edit `apis.conf` and re-run `deploy.sh`).
+- **Use a harmless endpoint.** It runs every 60 seconds — a health, ping, or search
+  endpoint is ideal; never something that creates or changes data.
+- **Don't edit `blackbox/blackbox.yml`** — it's generated. Edit `apis.conf` and re-run
+  `deploy.sh`.
 
 ### 5g. MongoDB (one server or many)
 Off by default. See **[section 4](#4-choosing-which-databases-to-monitor-sql-server--mongodb-on-or-off)**.
@@ -983,6 +1021,19 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   `group_wait` (30s before the first message), `group_interval` (5m between updates),
   `repeat_interval` (4h re-notify while still broken). Tune them there, then
   `bash scripts/deploy.sh`.
+
+**An API (or server) vanishes when I pick an environment**
+→ That resource has no `env` label, so it only appears under **All**. Add it:
+  - APIs → add `| env=prod` to its line in `blackbox/apis.conf`
+  - Linux/Windows/SNMP/K8s → add `env: prod` under `labels:` in its `prometheus/targets/*.yml`
+  - SQL Server → prefix the name in `mssql/servers.conf`, e.g. `prod-sql-01`
+  - MongoDB → add `| env=prod` to its line in `mongodb/servers.conf`
+
+  Then `bash scripts/deploy.sh` (or reload Prometheus for target-file edits). Check with:
+  ```bash
+  curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=probe_success{job="api"}'
+  ```
+  Each result should show an `env` label.
 
 **`SKIP: ... (none configured)` lines in the smoke test**
 → Normal. Those are resource types you haven't added yet (node, windows, snmp…).
