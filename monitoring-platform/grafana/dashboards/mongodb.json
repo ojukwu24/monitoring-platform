@@ -1,112 +1,544 @@
 {
   "uid": "mongodb-overview",
   "title": "MongoDB",
-  "tags": ["mongodb", "database"],
+  "tags": [
+    "mongodb",
+    "database"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
-  "time": { "from": "now-6h", "to": "now" },
-  "annotations": { "list": [] },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "annotations": {
+    "list": []
+  },
   "templating": {
     "list": [
       {
-        "name": "env", "label": "Environment", "type": "query",
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "query": "label_values(env)", "refresh": 1,
-        "includeAll": true, "multi": true, "allValue": ".*",
-        "current": { "text": "All", "value": "$__all", "selected": true }, "options": [],
+        "name": "env",
+        "label": "Environment",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(env)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": [],
         "description": "Filter this dashboard to one or more environments"
       },
       {
-        "name": "server", "label": "MongoDB server", "type": "query",
-        "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "query": "label_values(mongodb_up{env=~\"$env\"}, instance)", "refresh": 1,
-        "includeAll": true, "multi": true, "allValue": ".*",
-        "current": { "text": "All", "value": "$__all", "selected": true }, "options": []
+        "name": "server",
+        "label": "MongoDB server",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(mongodb_up{env=~\"$env\"}, instance)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all",
+          "selected": true
+        },
+        "options": []
       }
     ]
   },
   "panels": [
     {
-      "id": 1, "type": "stat", "title": "MongoDB status",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
-      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name" },
-      "fieldConfig": { "defaults": { "noValue": "no MongoDB servers configured",
-        "mappings": [ { "type": "value", "options": { "0": { "text": "DOWN", "color": "red", "index": 0 }, "1": { "text": "UP", "color": "green", "index": 1 } } } ],
-        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_up{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 1,
+      "type": "stat",
+      "title": "MongoDB status",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "no MongoDB servers configured",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_up{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
     },
     {
-      "id": 2, "type": "stat", "title": "Servers monitored",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
-      "options": { "colorMode": "background", "graphMode": "none" },
-      "fieldConfig": { "defaults": { "noValue": "0", "thresholds": { "mode": "absolute", "steps": [ { "color": "text", "value": null } ] } } },
-      "targets": [ { "refId": "A", "expr": "count(mongodb_up{instance=~\"$server\"}) or vector(0)", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 2,
+      "type": "stat",
+      "title": "Replica set role",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "not a replica set",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "STARTUP",
+                  "color": "yellow",
+                  "index": 0
+                },
+                "1": {
+                  "text": "PRIMARY",
+                  "color": "green",
+                  "index": 1
+                },
+                "2": {
+                  "text": "SECONDARY",
+                  "color": "blue",
+                  "index": 2
+                },
+                "3": {
+                  "text": "RECOVERING",
+                  "color": "orange",
+                  "index": 3
+                },
+                "5": {
+                  "text": "STARTUP2",
+                  "color": "yellow",
+                  "index": 4
+                },
+                "6": {
+                  "text": "UNKNOWN",
+                  "color": "red",
+                  "index": 5
+                },
+                "8": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 6
+                },
+                "9": {
+                  "text": "ROLLBACK",
+                  "color": "orange",
+                  "index": 7
+                },
+                "10": {
+                  "text": "REMOVED",
+                  "color": "red",
+                  "index": 8
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_myState{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}}"
+        }
+      ]
     },
     {
-      "id": 3, "type": "stat", "title": "Uptime",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "options": { "colorMode": "value", "graphMode": "none", "textMode": "value_and_name" },
-      "fieldConfig": { "defaults": { "unit": "s", "noValue": "-", "thresholds": { "mode": "absolute", "steps": [ { "color": "text", "value": null } ] } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_instance_uptime_seconds{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 3,
+      "type": "stat",
+      "title": "Servers monitored",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(mongodb_up{instance=~\"$server\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
-      "id": 4, "type": "stat", "title": "Current connections",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
-      "options": { "colorMode": "background", "graphMode": "area", "textMode": "value_and_name" },
-      "fieldConfig": { "defaults": { "noValue": "-",
-        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "#EAB839", "value": 500 }, { "color": "red", "value": 5000 } ] } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_ss_connections{conn_type=\"current\", instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 4,
+      "type": "stat",
+      "title": "Healthy members",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "-",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(mongodb_members_health{instance=~\"$server\"}) or vector(0)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
     },
     {
-      "id": 5, "type": "timeseries", "title": "Operations / sec",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "fieldConfig": { "defaults": { "unit": "ops", "noValue": "-", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "rate(mongodb_ss_opcounters{instance=~\"$server\"}[5m])", "legendFormat": "{{instance}} {{legacy_op_type}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 5,
+      "type": "timeseries",
+      "title": "Replica set member health (1 = healthy)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "noValue": "not a replica set",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_members_health{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} {{member_idx}}"
+        }
+      ]
     },
     {
-      "id": 6, "type": "timeseries", "title": "Connections over time",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "fieldConfig": { "defaults": { "noValue": "-", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_ss_connections{instance=~\"$server\"}", "legendFormat": "{{instance}} {{conn_type}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 6,
+      "type": "timeseries",
+      "title": "Connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "noValue": "-"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_ss_connections{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} {{conn_type}}"
+        }
+      ]
     },
     {
-      "id": 7, "type": "timeseries", "title": "Replication lag (seconds behind primary)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
-      "fieldConfig": { "defaults": { "unit": "s", "noValue": "not a replica set",
-        "custom": { "drawStyle": "line", "fillOpacity": 10 },
-        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "#EAB839", "value": 10 }, { "color": "red", "value": 60 } ] } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_rs_members_optimeDate{member_state=\"PRIMARY\", instance=~\"$server\"} - ignoring(member_state, member_idx, member_name) mongodb_rs_members_optimeDate{member_state=\"SECONDARY\", instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 7,
+      "type": "timeseries",
+      "title": "Replication lag (seconds behind newest member)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "noValue": "not a replica set",
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(instance) (mongodb_members_optimeDate{instance=~\"$server\"}) - mongodb_members_optimeDate{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} {{member_idx}}"
+        }
+      ]
     },
     {
-      "id": 8, "type": "timeseries", "title": "Document operations / sec",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
-      "fieldConfig": { "defaults": { "unit": "ops", "noValue": "-", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "rate(mongodb_ss_metrics_document{instance=~\"$server\"}[5m])", "legendFormat": "{{instance}} {{doc_op_type}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 8,
+      "type": "timeseries",
+      "title": "Member uptime",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "noValue": "-",
+          "unit": "s"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_members_uptime{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} {{member_idx}}"
+        }
+      ]
     },
     {
-      "id": 9, "type": "timeseries", "title": "Resident memory (MB)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
-      "fieldConfig": { "defaults": { "unit": "decmbytes", "noValue": "-", "custom": { "drawStyle": "line", "fillOpacity": 10 } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_ss_mem_resident{instance=~\"$server\"}", "legendFormat": "{{instance}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 9,
+      "type": "timeseries",
+      "title": "Oplog size",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "noValue": "-",
+          "unit": "bytes"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_oplog_stats_storageSize{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} used"
+        },
+        {
+          "refId": "B",
+          "expr": "mongodb_oplog_stats_maxSize{instance=~\"$server\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} max"
+        }
+      ]
     },
     {
-      "id": 10, "type": "timeseries", "title": "Queued operations (readers / writers)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "fieldConfig": { "defaults": { "noValue": "-", "custom": { "drawStyle": "line", "fillOpacity": 10 },
-        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "#EAB839", "value": 10 }, { "color": "red", "value": 50 } ] } } },
-      "targets": [ { "refId": "A", "expr": "mongodb_ss_globalLock_currentQueue{instance=~\"$server\"}", "legendFormat": "{{instance}} {{count_type}}", "datasource": { "type": "prometheus", "uid": "prometheus" } } ]
+      "id": 10,
+      "type": "timeseries",
+      "title": "Assertions per second (errors reported by MongoDB)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10
+          },
+          "noValue": "-"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mongodb_ss_asserts{instance=~\"$server\"}[5m])",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "{{instance}} {{assert_type}}"
+        }
+      ]
     }
   ]
 }

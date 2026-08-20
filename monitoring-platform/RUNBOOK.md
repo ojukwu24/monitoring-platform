@@ -1107,7 +1107,13 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
      `mongodb/servers.conf` (the default collectors don't include it) and re-run
      `bash scripts/deploy.sh`.
 
-  7. **What the exporter itself reports** (first server uses port 9216):
+  7. **Dashboard shows the status tile but every chart is empty?** Grafana may be
+     showing an older copy of the dashboard. Open the current one directly at
+     `http://<vm-ip>:3000/d/mongodb-overview` — if that one works, delete the
+     duplicate (Dashboards -> MongoDB -> the one whose URL is not
+     `/d/mongodb-overview` -> Delete).
+
+  8. **What the exporter itself reports** (first server uses port 9216):
      ```bash
      curl -s http://localhost:9216/metrics | grep -E '^mongodb_up'
      ```
