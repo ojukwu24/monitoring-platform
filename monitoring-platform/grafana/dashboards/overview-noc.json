@@ -912,7 +912,7 @@
     {
       "id": 103,
       "type": "row",
-      "title": "\ud83d\uddc4\ufe0f  Databases \u2014 SQL Server",
+      "title": "\ud83d\uddc4\ufe0f  Databases \u2014 SQL Server & MongoDB",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -932,7 +932,7 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 30
       },
@@ -998,8 +998,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 4,
         "y": 30
       },
       "options": {
@@ -1053,8 +1053,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 12,
+        "w": 4,
+        "x": 8,
         "y": 30
       },
       "options": {
@@ -1109,8 +1109,8 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 12,
         "y": 30
       },
       "options": {
@@ -1579,6 +1579,72 @@
           "refId": "A",
           "expr": "probe_http_status_code{job=\"api\", env=~\"$env\"}",
           "legendFormat": "{{api}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "type": "stat",
+      "title": "MongoDB status",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 30
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "no MongoDB configured",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mongodb_up{env=~\"$env\"}",
+          "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"

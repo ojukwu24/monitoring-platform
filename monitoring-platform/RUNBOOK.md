@@ -184,8 +184,8 @@ It groups everything you monitor and colours it:
   lowest free disk % bars for every server side by side.
 - **☸️ Kubernetes:** nodes ready / not ready, pods running, pods failed or pending,
   containers restarting in the last 15 min.
-- **🗄️ Databases:** one UP/DOWN tile per SQL Server, plus page life expectancy,
-  buffer cache hit %, and active connections per server.
+- **🗄️ Databases:** one UP/DOWN tile per SQL Server (plus page life expectancy,
+  buffer cache hit % and active connections) **and** an UP/DOWN tile per MongoDB.
 - **🔌 API Endpoints:** UP/DOWN tile per API (probed every 60s with its API key),
   response time, and HTTP status code.
 - **🌐 Endpoints & Network:** website/endpoint UP/DOWN tiles, TLS certificate days
