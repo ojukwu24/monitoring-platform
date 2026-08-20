@@ -1108,10 +1108,13 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
      `bash scripts/deploy.sh`.
 
   7. **Dashboard shows the status tile but every chart is empty?** Grafana may be
-     showing an older copy of the dashboard. Open the current one directly at
-     `http://<vm-ip>:3000/d/mongodb-overview` — if that one works, delete the
-     duplicate (Dashboards -> MongoDB -> the one whose URL is not
-     `/d/mongodb-overview` -> Delete).
+     showing an older copy. Open the current one directly at
+     `http://<vm-ip>:3000/d/mongodb-overview`.
+
+     ⚠️ **Do not delete a provisioned dashboard from the Grafana UI.** It leaves an
+     orphaned provisioning record and Grafana then refuses to re-create it, logging
+     `failed to save dashboard ... could not resolve dashboards:uid:...`. Dashboards
+     here are managed by files — see the next entry if you hit that.
 
   8. **What the exporter itself reports** (first server uses port 9216):
      ```bash
@@ -1119,6 +1122,19 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
      ```
      `mongodb_up 1` = connected. `0` = running but cannot connect (steps 2–5).
      Connection refused = the container isn't running (step 1).
+
+**Grafana logs `failed to save dashboard ... could not resolve dashboards:uid:X`**
+→ A stale provisioning record: Grafana thinks the file is already provisioned but the
+  dashboard itself was deleted (usually deleted by hand in the UI). Clear it by taking
+  the file away, letting Grafana tidy up, then putting it back:
+  ```bash
+  mv grafana/dashboards/<file>.json /tmp/
+  docker compose restart grafana && sleep 25
+  mv /tmp/<file>.json grafana/dashboards/
+  docker compose restart grafana
+  ```
+  Still stuck? Give it a fresh identity — change the `"uid"` near the top of the JSON
+  to something new and restart Grafana; it will be created as a new dashboard.
 
 **An API (or server) vanishes when I pick an environment**
 → That resource has no `env` label, so it only appears under **All**. Add it:
