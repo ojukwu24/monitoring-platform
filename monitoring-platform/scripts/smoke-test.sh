@@ -62,6 +62,7 @@ echo "== monitored resources =="
 check "Linux hosts"      'up{job="node"}'
 check "Windows hosts"    'up{job="windows"}'
 check "SQL Servers"      'mssql_up'
+check "MongoDB"          'mongodb_up'
 check "Kubernetes (KSM)" 'up{job="kube-state-metrics"}'
 check "Network (SNMP)"   'up{job="snmp"}'
 check "Websites"         'probe_success{job="blackbox"}'

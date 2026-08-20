@@ -3,7 +3,12 @@
 #   <name> | <URI> [| env=<environment>]
 #
 #   <name>  short label, no spaces — shown in Grafana (letters, digits, - _)
-#   <URI>   mongodb://user:pass@host:27017   (user needs the clusterMonitor role)
+#   <URI>   mongodb://user:pass@host:27017/?authSource=admin
+#
+#           IMPORTANT: if you created the monitoring user in the "admin" database
+#           (the usual case) you MUST add ?authSource=admin — without it the login
+#           fails and the dashboard shows DOWN.
+#           The user needs the clusterMonitor role.
 #   env=    which environment this server belongs to (dev / staging / prod).
 #           Optional, but it drives the Environment filter on the dashboards.
 #
@@ -16,6 +21,6 @@
 #
 # servers.conf is git-ignored because it contains passwords.
 
-prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017 | env=prod
-staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017 | env=staging
-dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017 | env=dev
+prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017/?authSource=admin | env=prod
+staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017/?authSource=admin | env=staging
+dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017/?authSource=admin | env=dev

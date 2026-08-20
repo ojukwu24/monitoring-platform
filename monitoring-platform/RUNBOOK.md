@@ -303,10 +303,17 @@ nano mongodb/servers.conf
 ```
 One per line, `|`-separated:
 ```
-prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017 | env=prod
-staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017 | env=staging
-dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017 | env=dev
+prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017/?authSource=admin | env=prod
+staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017/?authSource=admin | env=staging
+dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017/?authSource=admin | env=dev
 ```
+
+> ⚠️ **`?authSource=admin` matters.** If you created the monitoring user in the `admin`
+> database (the normal case), leaving it out makes the login fail and the dashboard
+> show **DOWN**. This is the single most common MongoDB setup mistake.
+
+**Nothing is installed on the MongoDB server itself.** The exporter runs as a container
+on the monitoring VM and connects over the network — you only create the user below.
 Then set `COMPOSE_PROFILES=mssql,mongodb` (or just `mongodb`) and run
 `bash scripts/deploy.sh`.
 
@@ -1021,6 +1028,51 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   `group_wait` (30s before the first message), `group_interval` (5m between updates),
   `repeat_interval` (4h re-notify while still broken). Tune them there, then
   `bash scripts/deploy.sh`.
+
+**MongoDB dashboard is empty / shows DOWN**
+→ You do **not** install anything on the MongoDB server — the exporter runs on the
+  monitoring VM. Work through these in order:
+
+  1. **Is the exporter container running?**
+     ```bash
+     docker compose ps | grep mongodb
+     ```
+     Nothing listed? Then `COMPOSE_PROFILES` doesn't include `mongodb`:
+     ```bash
+     grep '^COMPOSE_PROFILES=' .env      # want: mssql,mongodb  (or just mongodb)
+     ```
+     Fix it and run `bash scripts/deploy.sh`.
+
+  2. **Read the actual error** — this is the step that tells you *why*:
+     ```bash
+     docker compose logs --tail=50 $(docker compose ps --services | grep mongodb | head -1)
+     ```
+
+  3. **`?authSource=admin` missing** — the most common cause. If your monitoring user
+     lives in the `admin` database, the URI must say so:
+     ```
+     prod-mongo-01 | mongodb://mon_user:Pass@10.0.1.31:27017/?authSource=admin | env=prod
+     ```
+     Log symptom: an authentication / "not authorized" error.
+
+  4. **Can the VM reach MongoDB at all?**
+     ```bash
+     nc -zv <mongo-host> 27017
+     ```
+     Refused/timeout = firewall, or MongoDB is bound to localhost only
+     (`bindIp` in `mongod.conf` must include the interface the VM connects to).
+
+  5. **Does the user have the right role?** On MongoDB:
+     ```javascript
+     db.getSiblingDB("admin").getUser("mon_user")   // expect role clusterMonitor
+     ```
+
+  6. **What the exporter itself reports** (first server uses port 9216):
+     ```bash
+     curl -s http://localhost:9216/metrics | grep -E '^mongodb_up'
+     ```
+     `mongodb_up 1` = connected. `0` = running but cannot connect (steps 2–5).
+     Connection refused = the container isn't running (step 1).
 
 **An API (or server) vanishes when I pick an environment**
 → That resource has no `env` label, so it only appears under **All**. Add it:
