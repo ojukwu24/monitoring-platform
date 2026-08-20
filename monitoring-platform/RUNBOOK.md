@@ -321,6 +321,15 @@ Each server gets its own small exporter container with an auto-assigned port —
 don't manage any of that. The `env=` field feeds the **Environment** filter on the
 dashboards.
 
+**Only lightweight metrics are collected by default** (server status and replica-set
+status — everything the dashboard shows). If you want more, add `collect=`:
+```
+prod-mongo-01 | mongodb://... | env=prod | collect=dbstats
+```
+⚠️ Avoid `collect=collstats` unless you really need per-collection statistics: it runs
+an aggregation over **every collection**, which on a database with many collections
+times out and makes MongoDB appear **DOWN**.
+
 **Does MongoDB need a username and password?** Only if authentication is enabled
 (usual for production, often off for dev/lab). To check, from the monitoring VM:
 ```bash
@@ -1092,7 +1101,13 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
      db.getSiblingDB("admin").getUser("mon_user")   // expect role clusterMonitor
      ```
 
-  6. **What the exporter itself reports** (first server uses port 9216):
+  6. **Log full of `cannot get $collstats cursor ... context deadline exceeded`?**
+     The exporter connected fine, but per-collection stats are timing out and taking
+     the whole scrape down. Remove `collect=collstats` from that server's line in
+     `mongodb/servers.conf` (the default collectors don't include it) and re-run
+     `bash scripts/deploy.sh`.
+
+  7. **What the exporter itself reports** (first server uses port 9216):
      ```bash
      curl -s http://localhost:9216/metrics | grep -E '^mongodb_up'
      ```

@@ -15,6 +15,15 @@
 #   env=    which environment this server belongs to (dev / staging / prod).
 #           Optional, but it drives the Environment filter on the dashboards.
 #
+#   collect=  extra collectors, comma separated. Only add these if you need them.
+#             By default only the light ones run (server status + replica set),
+#             which is what the dashboard uses. Heavy options:
+#               dbstats     per-database size/objects
+#               collstats   per-COLLECTION stats — SLOW on servers with many
+#                           collections; it can time out and make the server
+#                           appear DOWN. Avoid unless you really need it.
+#             e.g.  | collect=dbstats
+#
 # Each server gets its own small exporter container, assigned a port automatically.
 #
 # Copy this file to  servers.conf  and edit it:

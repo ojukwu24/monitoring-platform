@@ -19,26 +19,29 @@ BASE_PORT=9216
 trap 'rm -f "${COMPOSE}.tmp" "${TARGETS}.tmp"' EXIT
 trim() { printf "%s" "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
-names=(); uris=(); envs=()
+names=(); uris=(); envs=(); extras=()
 
 if [ -f "$CONF" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%%$'\r'}"
     case "$line" in ''|\#*) continue ;; esac
     IFS='|' read -ra parts <<< "$line"
-    name="$(trim "${parts[0]:-}")"; uri="$(trim "${parts[1]:-}")"; envv=""
+    name="$(trim "${parts[0]:-}")"; uri="$(trim "${parts[1]:-}")"; envv=""; extra=""
     for ((i=2; i<${#parts[@]}; i++)); do
       f="$(trim "${parts[i]}")"
-      case "$f" in env=*) envv="$(trim "${f#env=}")" ;; esac
+      case "$f" in
+        env=*)     envv="$(trim "${f#env=}")" ;;
+        collect=*) extra="$(trim "${f#collect=}")" ;;
+      esac
     done
     [ -n "$name" ] && [ -n "$uri" ] || { echo "ERROR: $CONF line needs '<name> | <URI>': $line" >&2; exit 1; }
     case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: name '$name' — letters, digits, - or _ only." >&2; exit 1 ;; esac
     case "$uri" in mongodb://*|mongodb+srv://*) ;; *) echo "ERROR: URI for '$name' must start with mongodb:// or mongodb+srv://" >&2; exit 1 ;; esac
-    names+=("$name"); uris+=("$uri"); envs+=("$envv")
+    names+=("$name"); uris+=("$uri"); envs+=("$envv"); extras+=("$extra")
   done < "$CONF"
 elif [ -n "${MONGODB_URI:-}" ]; then
   n="$(printf '%s' "$MONGODB_URI" | sed -e 's#.*@##' -e 's#[/?].*##' -e 's#:#-#g')"
-  names+=("${n:-mongodb}"); uris+=("$MONGODB_URI"); envs+=("")
+  names+=("${n:-mongodb}"); uris+=("$MONGODB_URI"); envs+=(""); extras+=("")
 fi
 
 {
@@ -59,7 +62,16 @@ fi
       echo "    profiles: [mongodb]"
       echo "    command:"
       echo "      - --mongodb.uri=${uris[$i]}"
-      echo "      - --collect-all"
+      # Light collectors by default. --collect-all runs $collStats on EVERY
+      # collection, which times out (and loads the server) on real databases.
+      echo "      - --collector.diagnosticdata"
+      echo "      - --collector.replicasetstatus"
+      if [ -n "${extras[$i]}" ]; then
+        IFS=',' read -ra cs <<< "${extras[$i]}"
+        for c in "${cs[@]}"; do
+          c="$(trim "$c")"; [ -n "$c" ] && echo "      - --collector.${c}"
+        done
+      fi
       echo "    ports:"
       echo "      - \"${port}:9216\""
       port=$((port + 1))
