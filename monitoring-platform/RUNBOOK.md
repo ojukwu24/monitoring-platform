@@ -324,10 +324,15 @@ dashboards.
 **Does MongoDB need a username and password?** Only if authentication is enabled
 (usual for production, often off for dev/lab). To check, from the monitoring VM:
 ```bash
-docker run --rm mongo:7 mongosh "mongodb://<mongo-host>:27017" --eval "db.adminCommand({ping:1})"
+docker run --rm mongo:7 mongosh "mongodb://<mongo-host>:27017"   --eval "db.adminCommand({serverStatus:1}).ok"
 ```
-- **Works** → auth is off. Use a URI with no credentials: `mongodb://10.0.3.31:27017`
-- **Authorization error** → auth is on. Create the user below and use the full URI.
+- Prints **`1`** → auth is off. Use a URI with no credentials: `mongodb://10.0.3.31:27017`
+- **"requires authentication" / "not authorized"** → auth is on. Create the user below
+  and use the full URI with `?authSource=admin`.
+
+> Don't test with `ping` — MongoDB answers `ping` **without** authentication even when
+> auth is enabled, so a successful ping proves nothing. `serverStatus` is what the
+> exporter actually calls, so it is the meaningful test.
 
 On **each** MongoDB *with authentication enabled*, create the read-only monitoring user
 (`clusterMonitor` can read server statistics only — not your data, and it cannot change
