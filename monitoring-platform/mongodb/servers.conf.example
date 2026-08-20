@@ -9,6 +9,9 @@
 #           (the usual case) you MUST add ?authSource=admin — without it the login
 #           fails and the dashboard shows DOWN.
 #           The user needs the clusterMonitor role.
+#
+#           NO AUTHENTICATION on your MongoDB? Then no username/password is
+#           needed at all — just:   mongodb://10.0.3.31:27017
 #   env=    which environment this server belongs to (dev / staging / prod).
 #           Optional, but it drives the Environment filter on the dashboards.
 #
@@ -24,3 +27,6 @@
 prod-mongo-01    | mongodb://mon_user:Pass1@10.0.1.31:27017/?authSource=admin | env=prod
 staging-mongo-01 | mongodb://mon_user:Pass2@10.0.2.31:27017/?authSource=admin | env=staging
 dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017/?authSource=admin | env=dev
+
+# A MongoDB with authentication turned off needs no credentials:
+# lab-mongo | mongodb://10.0.9.31:27017 | env=dev

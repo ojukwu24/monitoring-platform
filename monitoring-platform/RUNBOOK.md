@@ -321,7 +321,17 @@ Each server gets its own small exporter container with an auto-assigned port —
 don't manage any of that. The `env=` field feeds the **Environment** filter on the
 dashboards.
 
-On **each** MongoDB, create the read-only monitoring user:
+**Does MongoDB need a username and password?** Only if authentication is enabled
+(usual for production, often off for dev/lab). To check, from the monitoring VM:
+```bash
+docker run --rm mongo:7 mongosh "mongodb://<mongo-host>:27017" --eval "db.adminCommand({ping:1})"
+```
+- **Works** → auth is off. Use a URI with no credentials: `mongodb://10.0.3.31:27017`
+- **Authorization error** → auth is on. Create the user below and use the full URI.
+
+On **each** MongoDB *with authentication enabled*, create the read-only monitoring user
+(`clusterMonitor` can read server statistics only — not your data, and it cannot change
+anything):
 ```javascript
 db.getSiblingDB("admin").createUser({
   user: "mon_user", pwd: "Pass1",
