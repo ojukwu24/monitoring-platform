@@ -85,7 +85,10 @@ bash scripts/fetch-dashboards.sh
 
 # Bring up the stack.
 docker compose pull
-docker compose up -d
+# --remove-orphans deletes containers whose service no longer exists (e.g. an
+# exporter you switched off, or one renamed by an upgrade). Without it a stale
+# container keeps running and keeps reporting "down".
+docker compose up -d --remove-orphans
 
 echo
 echo "Deployed. Grafana:      http://localhost:3000  (user: ${GF_ADMIN_USER})"

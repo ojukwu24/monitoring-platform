@@ -1033,6 +1033,16 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
 → You do **not** install anything on the MongoDB server — the exporter runs on the
   monitoring VM. Work through these in order:
 
+  0. **A leftover container from an older version?** If `docker compose logs` says
+     `no such service: mongodb-exporter`, that name is from a previous release —
+     the container is still running but Compose no longer defines it, so it keeps
+     reporting DOWN. Clear it:
+     ```bash
+     docker compose up -d --remove-orphans
+     curl -s -X POST http://localhost:9090/-/reload
+     ```
+     (`deploy.sh` now does this for you.)
+
   1. **Is the exporter container running?**
      ```bash
      docker compose ps | grep mongodb
