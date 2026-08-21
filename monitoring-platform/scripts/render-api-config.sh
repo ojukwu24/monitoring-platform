@@ -46,18 +46,21 @@ cp "$BASE" "${OUT}.tmp"
 } > "${TARGETS}.tmp"
 
 count=0
+lineno=0
 if [ -f "$CONF" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
     line="${line%%$'\r'}"
+    line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     case "$line" in ''|\#*) continue ;; esac
 
     IFS='|' read -ra parts <<< "$line"
     name="$(trim "${parts[0]:-}")"
     url="$(trim "${parts[1]:-}")"
 
-    [ -n "$name" ] && [ -n "$url" ] || { echo "ERROR: $CONF line needs '<name> | <url>': $line" >&2; exit 1; }
-    case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: API name '$name' — use letters, digits, - or _ only." >&2; exit 1 ;; esac
-    case "$url" in http://*|https://*) ;; *) echo "ERROR: URL for '$name' must start with http:// or https://" >&2; exit 1 ;; esac
+    [ -n "$name" ] && [ -n "$url" ] || { echo "ERROR: $CONF line ${lineno} needs '<name> | <url>':" >&2; echo "       ${line}" >&2; exit 1; }
+    case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: $CONF line ${lineno}: API name '$name' — use letters, digits, - or _ only." >&2; exit 1 ;; esac
+    case "$url" in http://*|https://*) ;; *) echo "ERROR: $CONF line ${lineno}: URL for '$name' must start with http:// or https://" >&2; exit 1 ;; esac
 
     method="GET"; body=""; ctype=""; expect=""; match=""; insecure=""; timeout="10s"; envv=""
     headers=()
@@ -79,7 +82,7 @@ if [ -f "$CONF" ]; then
         *)
           case "$f" in
             *:*) headers+=("$f") ;;
-            *) echo "ERROR: '$name': cannot parse field '$f' (need 'Header: value' or 'option=value')." >&2; exit 1 ;;
+            *) echo "ERROR: $CONF line ${lineno} ('$name'): cannot parse field '$f' — need 'Header: value' or 'option=value'." >&2; exit 1 ;;
           esac ;;
       esac
     done

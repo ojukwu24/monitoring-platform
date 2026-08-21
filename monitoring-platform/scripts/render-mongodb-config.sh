@@ -21,9 +21,12 @@ trim() { printf "%s" "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
 
 names=(); uris=(); envs=(); extras=()
 
+  lineno=0
 if [ -f "$CONF" ]; then
   while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
     line="${line%%$'\r'}"
+    line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     case "$line" in ''|\#*) continue ;; esac
     IFS='|' read -ra parts <<< "$line"
     name="$(trim "${parts[0]:-}")"; uri="$(trim "${parts[1]:-}")"; envv=""; extra=""
@@ -34,7 +37,7 @@ if [ -f "$CONF" ]; then
         collect=*) extra="$(trim "${f#collect=}")" ;;
       esac
     done
-    [ -n "$name" ] && [ -n "$uri" ] || { echo "ERROR: $CONF line needs '<name> | <URI>': $line" >&2; exit 1; }
+    [ -n "$name" ] && [ -n "$uri" ] || { echo "ERROR: $CONF line ${lineno} needs '<name> | <URI>':" >&2; echo "       ${line}" >&2; exit 1; }
     case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: name '$name' — letters, digits, - or _ only." >&2; exit 1 ;; esac
     case "$uri" in mongodb://*|mongodb+srv://*) ;; *) echo "ERROR: URI for '$name' must start with mongodb:// or mongodb+srv://" >&2; exit 1 ;; esac
     names+=("$name"); uris+=("$uri"); envs+=("$envv"); extras+=("$extra")

@@ -1136,6 +1136,16 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   Still stuck? Give it a fresh identity — change the `"uid"` near the top of the JSON
   to something new and restart Grafana; it will be created as a new dashboard.
 
+**`deploy.sh` says `ERROR: ... line N needs '<name> | <url>'` with nothing after it**
+→ That line contains only spaces or tabs. Newer versions ignore whitespace-only lines;
+  if you see it, find and delete the line:
+  ```bash
+  grep -n '^[[:space:]]\+$' blackbox/apis.conf
+  ```
+  Note the script **stops** on the first bad line, so nothing after it is applied — a
+  later API can look "not working" when really the file was never regenerated. The
+  error now names the line number and prints the offending line.
+
 **An API (or server) vanishes when I pick an environment**
 → That resource has no `env` label, so it only appears under **All**. Add it:
   - APIs → add `| env=prod` to its line in `blackbox/apis.conf`

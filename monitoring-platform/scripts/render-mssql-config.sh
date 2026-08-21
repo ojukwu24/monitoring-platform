@@ -30,14 +30,17 @@ trap 'rm -f "$TMP"' EXIT
 targets=()
 
 if [ -f "$CONF" ]; then
+  lineno=0
   while IFS= read -r line || [ -n "$line" ]; do
+    lineno=$((lineno + 1))
     line="${line%%$'\r'}"                       # tolerate CRLF
+    line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     case "$line" in ''|\#*) continue ;; esac    # skip blanks/comments
     name="${line%%[[:space:]]*}"                # first field
     dsn="${line#*[[:space:]]}"                  # rest of the line
     dsn="$(printf '%s' "$dsn" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     if [ -z "$name" ] || [ -z "$dsn" ] || [ "$name" = "$dsn" ]; then
-      echo "ERROR: $CONF line is not '<name> <DSN>': $line" >&2; exit 1
+      echo "ERROR: $CONF line ${lineno} is not '<name> <DSN>':" >&2; echo "       ${line}" >&2; exit 1
     fi
     case "$dsn" in *"'"*) echo "ERROR: DSN for '$name' contains a single quote." >&2; exit 1 ;; esac
     targets+=("$name"$'\t'"$dsn")
