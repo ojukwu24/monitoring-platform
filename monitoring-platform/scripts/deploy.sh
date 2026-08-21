@@ -90,6 +90,32 @@ docker compose pull
 # container keeps running and keeps reporting "down".
 docker compose up -d --remove-orphans
 
+# Loud warning if something is configured but its profile is off — otherwise the
+# config renders fine, no exporter runs, and the dashboards stay mysteriously empty.
+warn=""
+case ",${COMPOSE_PROFILES:-}," in *,mssql,*) ;; *)
+  if [ -f mssql/servers.conf ] || [ -n "${MSSQL_DSN:-}" ]; then
+    warn="${warn}  - SQL Server is configured but NOT running: add 'mssql' to COMPOSE_PROFILES
+"
+  fi ;;
+esac
+case ",${COMPOSE_PROFILES:-}," in *,mongodb,*) ;; *)
+  if [ -f mongodb/servers.conf ] || [ -n "${MONGODB_URI:-}" ]; then
+    warn="${warn}  - MongoDB is configured but NOT running: add 'mongodb' to COMPOSE_PROFILES
+"
+  fi ;;
+esac
+if [ -n "$warn" ]; then
+  echo
+  echo "***********************************************************************"
+  echo "  WARNING — configured but not started (dashboards will stay empty):"
+  printf "%b" "$warn"
+  echo
+  echo "  Current: COMPOSE_PROFILES=${COMPOSE_PROFILES:-<empty>}   (in .env)"
+  echo "  Fix:     set COMPOSE_PROFILES=mssql,mongodb  then re-run this script"
+  echo "***********************************************************************"
+fi
+
 echo
 echo "Deployed. Grafana:      http://localhost:3000  (user: ${GF_ADMIN_USER})"
 echo "          Prometheus:   http://localhost:9090"

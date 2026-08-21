@@ -1146,6 +1146,21 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   later API can look "not working" when really the file was never regenerated. The
   error now names the line number and prints the offending line.
 
+**I added a database but nothing shows up**
+→ Check `COMPOSE_PROFILES` in `.env` — configuring a server and *enabling* it are two
+  separate steps. With the profile off, the config renders fine but no exporter runs:
+  ```bash
+  grep '^COMPOSE_PROFILES=' .env     # want: mssql,mongodb (or whichever you use)
+  docker compose ps | grep -E 'mssql|mongodb'
+  ```
+  Fix and redeploy:
+  ```bash
+  sed -i 's/^COMPOSE_PROFILES=.*/COMPOSE_PROFILES=mssql,mongodb/' .env
+  bash scripts/deploy.sh
+  ```
+  `deploy.sh` now ends with a loud WARNING block when something is configured but its
+  profile is off.
+
 **An API (or server) vanishes when I pick an environment**
 → That resource has no `env` label, so it only appears under **All**. Add it:
   - APIs → add `| env=prod` to its line in `blackbox/apis.conf`
