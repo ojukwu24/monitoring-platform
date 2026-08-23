@@ -1171,6 +1171,23 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   `deploy.sh` now ends with a loud WARNING block when something is configured but its
   profile is off.
 
+**An API is in apis.conf and rendered, but never appears at all (not even DOWN)**
+→ `probe_success` only exists when Prometheus successfully scrapes the probe. If the
+  *scrape itself* fails, the series is absent rather than 0 — so the API seems to
+  vanish. Check with `up`, which always exists:
+  ```bash
+  curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="api"}'
+  ```
+  - Both targets listed, one with `"0"` → the scrape is failing. The exact reason is in
+    **Prometheus → Status → Targets** (job `api`), and in
+    `docker compose logs blackbox-exporter`.
+  - Only one target listed → the target file wasn't reloaded:
+    `curl -s -X POST http://localhost:9090/-/reload`
+
+  Common causes: the probe takes longer than the job's 15s scrape timeout (raise it
+  with `timeout=` on that line), or blackbox rejected the module.
+  `smoke-test.sh` now reports these unscrapeable targets explicitly.
+
 **An API (or server) vanishes when I pick an environment**
 → That resource has no `env` label, so it only appears under **All**. Add it:
   - APIs → add `| env=prod` to its line in `blackbox/apis.conf`

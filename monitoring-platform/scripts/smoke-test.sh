@@ -68,6 +68,16 @@ check "Network (SNMP)"   'up{job="snmp"}'
 check "Websites"         'probe_success{job="blackbox"}'
 check "API endpoints"    'probe_success{job="api"}' 'api'
 
+# A target whose SCRAPE fails produces no probe_success at all, so it would silently
+# vanish from the check above. `up` covers that case.
+scrapes=$(curl -sG "${PROM}/api/v1/query" --data-urlencode 'query=up{job=~"api|blackbox|snmp"} == 0' 2>/dev/null)
+if printf '%s' "$scrapes" | grep -q '"value"'; then
+  echo "  NOTE: Prometheus cannot scrape these probe targets at all (not just a failed"
+  echo "        probe — see Prometheus > Status > Targets for the exact error):"
+  printf '%s' "$scrapes" | grep -oE '"instance":"[^"]*"' | cut -d'"' -f4 | sed 's/^/        - /'
+  fail=1
+fi
+
 # APIs: surface auth failures explicitly — a 401/403 means the key expired.
 apicodes=$(curl -sG "${PROM}/api/v1/query" \
   --data-urlencode 'query=probe_http_status_code{job="api"} == 401 or probe_http_status_code{job="api"} == 403' 2>/dev/null)
