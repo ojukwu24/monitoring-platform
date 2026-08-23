@@ -39,3 +39,13 @@ dev-mongo-01     | mongodb://mon_user:Pass3@10.0.3.31:27017/?authSource=admin | 
 
 # A MongoDB with authentication turned off needs no credentials:
 # lab-mongo | mongodb://10.0.9.31:27017 | env=dev
+#
+# REPLICA SET — list the members and name the set. One entry covers the whole set
+# and follows the primary automatically:
+# rs-prod | mongodb://db1.example.com:37005,db2.example.com:37006/?replicaSet=rs0 | env=prod
+#
+# Want per-node stats instead? Give each node its OWN line with a SINGLE host:
+# rs-prod-a | mongodb://db1.example.com:37005/?directConnection=true | env=prod
+# rs-prod-b | mongodb://db2.example.com:37006/?directConnection=true | env=prod
+#
+# Do NOT combine several hosts with directConnection=true — MongoDB rejects it.

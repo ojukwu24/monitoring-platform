@@ -1146,6 +1146,16 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   later API can look "not working" when really the file was never regenerated. The
   error now names the line number and prints the offending line.
 
+**MongoDB log: `a direct connection cannot be made if multiple hosts are specified`**
+→ The URI lists several hosts *and* `directConnection=true`. They are mutually
+  exclusive. Pick one:
+  - **Whole replica set** (one entry, follows the primary):
+    `rs-prod | mongodb://db1:37005,db2:37006/?replicaSet=rs0 | env=prod`
+  - **Per node** (one entry each, a SINGLE host per line):
+    `rs-prod-a | mongodb://db1:37005/?directConnection=true | env=prod`
+
+  `deploy.sh` now rejects the invalid combination before starting anything.
+
 **I added a database but nothing shows up**
 → Check `COMPOSE_PROFILES` in `.env` — configuring a server and *enabling* it are two
   separate steps. With the profile off, the config renders fine but no exporter runs:

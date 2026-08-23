@@ -40,6 +40,20 @@ if [ -f "$CONF" ]; then
     [ -n "$name" ] && [ -n "$uri" ] || { echo "ERROR: $CONF line ${lineno} needs '<name> | <URI>':" >&2; echo "       ${line}" >&2; exit 1; }
     case "$name" in *[!A-Za-z0-9_-]*) echo "ERROR: name '$name' — letters, digits, - or _ only." >&2; exit 1 ;; esac
     case "$uri" in mongodb://*|mongodb+srv://*) ;; *) echo "ERROR: URI for '$name' must start with mongodb:// or mongodb+srv://" >&2; exit 1 ;; esac
+
+    # directConnection targets ONE node, so it cannot be combined with a host list.
+    hostpart="${uri#*://}"; hostpart="${hostpart%%/*}"; hostpart="${hostpart#*@}"
+    case "$hostpart" in
+      *,*)
+        case "$uri" in
+          *directConnection=true*|*directConnection=True*)
+            echo "ERROR: $CONF line ${lineno} ('$name'): directConnection=true cannot be used" >&2
+            echo "       with several hosts (${hostpart})." >&2
+            echo "       Either drop directConnection and add ?replicaSet=<name> for the whole" >&2
+            echo "       replica set, or give this entry a single host and keep directConnection." >&2
+            exit 1 ;;
+        esac ;;
+    esac
     names+=("$name"); uris+=("$uri"); envs+=("$envv"); extras+=("$extra")
   done < "$CONF"
 elif [ -n "${MONGODB_URI:-}" ]; then
