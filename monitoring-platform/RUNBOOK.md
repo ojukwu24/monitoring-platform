@@ -1171,6 +1171,16 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   `deploy.sh` now ends with a loud WARNING block when something is configured but its
   profile is off.
 
+**I changed a config file but nothing changed**
+→ Exporters read their config **only at startup**, and `docker compose up -d` does not
+  restart a container just because a mounted file changed. `deploy.sh` now restarts
+  them for you; older versions did not. If in doubt:
+  ```bash
+  docker compose restart blackbox-exporter snmp-exporter mssql-exporter alertmanager
+  ```
+  Tell-tale sign: `docker compose logs <service> | head -3` shows a start time from
+  days ago. Affects `apis.conf` (blackbox), `snmp.yml`, SQL Server settings and SMTP.
+
 **An API is in apis.conf and rendered, but never appears at all (not even DOWN)**
 → `probe_success` only exists when Prometheus successfully scrapes the probe. If the
   *scrape itself* fails, the series is absent rather than 0 — so the API seems to

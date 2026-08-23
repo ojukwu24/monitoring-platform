@@ -90,6 +90,21 @@ docker compose pull
 # container keeps running and keeps reporting "down".
 docker compose up -d --remove-orphans
 
+# Containers read their bind-mounted config ONLY at startup, and `up -d` does not
+# restart them just because a mounted file changed. Without this, a regenerated
+# blackbox/snmp/sql_exporter/alertmanager config is silently never loaded.
+echo
+echo "Reloading services that read generated config files:"
+for svc in blackbox-exporter snmp-exporter mssql-exporter alertmanager; do
+  if docker compose ps --services --filter status=running 2>/dev/null | grep -qx "$svc"; then
+    docker compose restart "$svc" >/dev/null 2>&1 && echo "  restarted $svc"
+  fi
+done
+# Prometheus re-reads target files on its own, but prometheus.yml needs a reload.
+if curl -sf -X POST http://localhost:9090/-/reload >/dev/null 2>&1; then
+  echo "  reloaded prometheus config"
+fi
+
 # Loud warning if something is configured but its profile is off — otherwise the
 # config renders fine, no exporter runs, and the dashboards stay mysteriously empty.
 warn=""
