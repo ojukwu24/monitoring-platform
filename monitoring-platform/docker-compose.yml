@@ -56,7 +56,7 @@ services:
       - loki
 
   # MongoDB exporters are GENERATED per server into docker-compose.override.yml
-  # from mongodb/servers.conf (they use the `mongodb` profile). See RUNBOOK 5g.
+  # from mongodb/servers.conf (they use the `mongodb` profile). See docs/2-what-to-monitor.md
 
   # SQL Server monitoring via the community sql_exporter.
   # Config (with the DSN secret) is rendered from mssql/sql_exporter.yml.tmpl by deploy.sh.

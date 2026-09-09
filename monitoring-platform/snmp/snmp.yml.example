@@ -1,6 +1,6 @@
 # Minimal if_mib module for interface metrics (traffic + oper status).
 # For production, regenerate a fuller config per device family with the
-# official snmp_exporter generator; see RUNBOOK.md. Change the community string.
+# official snmp_exporter generator; see docs/2-what-to-monitor.md. Change the community string.
 modules:
   if_mib:
     walk:

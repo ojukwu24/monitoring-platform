@@ -1,72 +1,102 @@
-# Quickstart — SQL Server test (one page)
+# Quickstart — the whole install on one page
 
-Already read the [RUNBOOK](RUNBOOK.md) once? Here's just the sequence.
+For someone who has done this before, or is comfortable with Docker. If any step needs
+explaining, use [The Guide](RUNBOOK.md) instead — same steps, with the reasoning.
 
 ```bash
 # 1. Get the code
 git clone <your-repo-url>
 cd monitoring-platform
 
-# 1b. Check the VM and install Docker/git/curl/envsubst if missing
-bash scripts/setup-vm.sh                # or: bash scripts/setup-vm.sh --check-only
+# 2. Check the VM; install Docker/Compose/git/curl/envsubst if missing
+bash scripts/setup-vm.sh              # or --check-only / --yes
 
-# 2. Settings
+# 3. Settings
 cp .env.example .env
-#    Edit .env — set at minimum:
-#      TENANT=acme
-#      GF_ADMIN_PASSWORD=<your password>
-#      MSSQL_DSN='sqlserver://mon_user:YourPass@<sql-host>:1433?database=master&encrypt=disable'
-#    (keep MSSQL_DSN single-quoted; COMPOSE_PROFILES=mssql means "SQL Server, no MongoDB")
-
-# 2b. MORE THAN ONE SQL Server? List them instead of using MSSQL_DSN:
-#      cp mssql/servers.conf.example mssql/servers.conf
-#    one per line:   <name>  <DSN>      e.g.
-#      prod-sql-01  sqlserver://mon_user:Pass1@10.0.0.31:1433?database=master&encrypt=disable
-#      prod-sql-02  sqlserver://mon_user:Pass2@10.0.0.32:1433?database=master&encrypt=disable
-#    (servers.conf wins over MSSQL_DSN; it holds passwords so it is git-ignored)
-
-# 3. On EACH SQL Server (once): create the read-only monitoring login
-#      CREATE LOGIN mon_user WITH PASSWORD = 'YourPass';
-#      CREATE USER  mon_user FOR LOGIN mon_user;
-#      GRANT VIEW SERVER STATE TO mon_user;
+#    Set at minimum:  TENANT, GF_ADMIN_PASSWORD
+#    Leave COMPOSE_PROFILES empty for now (it switches databases on — see below)
 
 # 4. Start everything
 bash scripts/deploy.sh
 
-# 5. Health check
+# 5. Verify: core services PASS, everything else SKIP
 bash scripts/smoke-test.sh
 
-# 6. Open Grafana
-#      http://<vm-ip>:3000   (admin / your password)
-#      Dashboards -> Monitoring -> 'NOC Overview' (everything, green/amber/red)
-#      Dashboards -> Monitoring -> SQL Server
-#      Use the "SQL Server" dropdown (top-left) to pick a server, or All to compare.
+# 6. Open Grafana at http://<vm-ip>:3000  (admin / your password)
+#    Start with: Dashboards -> Monitoring -> NOC Overview — All Systems
 ```
 
-**Normal, not errors:** `SKIP: Linux hosts (none configured)` (and windows/snmp/etc.) —
-you just haven't added those yet. Only `SQL Servers` matters for this test.
-The test names each resource, so `DOWN prod-sql-02` tells you exactly what to fix.
+`SKIP: … (none configured)` is **normal** — you haven't added anything yet. Only `FAIL`
+is a problem.
 
-**Add more later:** see RUNBOOK section 5 (one recipe per server type).
+---
 
-**Show names, not IPs:** in `prometheus/targets/*.yml` give each machine its own block
-and add a `name:` label next to `job:` — that name then appears in Grafana, alerts and
-the health check instead of `10.0.0.11:9100`. See RUNBOOK section 5-names.
+## Now add what you want to watch
 
-**Databases on/off:** `COMPOSE_PROFILES` in `.env` — `mssql`, `mongodb`, `mssql,mongodb`,
-or empty for neither. For several MongoDB servers use `mongodb/servers.conf`.
-See RUNBOOK section 4.
+Full recipes: [2 — Choose what to monitor](docs/2-what-to-monitor.md).
 
-**Turn on email alerts:** set the `SMTP_*` and `ALERT_EMAIL_TO` values in `.env`,
-run `bash scripts/deploy.sh`, then prove it works with `bash scripts/test-alert.sh`
-— see RUNBOOK section 6.
+**Machines** — edit the target file, then reload. One block per machine; `name:` is what
+Grafana displays instead of the IP.
 
-**Already running and just pulled changes?** `git pull && bash scripts/deploy.sh` — see
-[UPGRADING.md](UPGRADING.md).
+```yaml
+# prometheus/targets/node.yml   (or windows.yml / kubernetes.yml / blackbox.yml / snmp.yml)
+- targets: ['10.0.0.11:9100']
+  labels:
+    job: node
+    os: linux
+    name: app-server-01
+    env: prod
+```
+```bash
+curl -s -X POST http://localhost:9090/-/reload
+```
 
-**Handy:**
+**Databases and APIs** — edit the `.conf` file, set `COMPOSE_PROFILES`, then deploy.
+
+```bash
+cp mssql/servers.conf.example   mssql/servers.conf     # <name>  <DSN>, one per line
+cp mongodb/servers.conf.example mongodb/servers.conf   # name | URI | env=
+cp blackbox/apis.conf.example   blackbox/apis.conf     # name | url | X-API-Key: … | env=
+
+# in .env:  COMPOSE_PROFILES=mssql,mongodb   (mssql | mongodb | both | empty for neither)
+bash scripts/deploy.sh
+```
+
+On each **SQL Server**, once:
+```sql
+CREATE LOGIN mon_user WITH PASSWORD = 'YourPass';
+CREATE USER  mon_user FOR LOGIN mon_user;
+GRANT VIEW SERVER STATE TO mon_user;
+```
+
+On each **MongoDB** that has authentication enabled, once:
+```javascript
+db.getSiblingDB("admin").createUser({
+  user: "mon_user", pwd: "Pass1", roles: [{ role: "clusterMonitor", db: "admin" }]
+})
+```
+
+---
+
+## Email alerts
+
+Set `SMTP_*` and `ALERT_EMAIL_TO` in `.env`, then:
+```bash
+bash scripts/deploy.sh
+bash scripts/test-alert.sh     # proves the full round trip
+```
+Details and provider-specific settings: [4 — Alerts and email](docs/4-alerts.md).
+
+---
+
+## Handy
+
 ```bash
 docker compose ps                                 # what's running
-docker compose logs mssql-exporter                # why MSSQL has no data
-curl -s -X POST http://localhost:9090/-/reload    # apply target edits
+docker compose logs mssql-exporter                # why a component has no data
+curl -s -X POST http://localhost:9090/-/reload    # apply target-file edits
+bash scripts/deploy.sh                            # apply everything else
 ```
+
+**Already running and just pulled changes?** [UPGRADING.md](UPGRADING.md)
+**Something broken?** [7 — Troubleshooting](docs/7-troubleshooting.md)

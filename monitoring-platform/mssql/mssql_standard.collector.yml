@@ -1,5 +1,5 @@
 # Standard SQL Server metrics for the community sql_exporter.
-# The monitoring login needs: CONNECT + VIEW SERVER STATE (see RUNBOOK.md).
+# The monitoring login needs: CONNECT + VIEW SERVER STATE (see docs/2-what-to-monitor.md).
 collector_name: mssql_standard
 
 metrics:

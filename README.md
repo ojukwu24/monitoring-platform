@@ -23,24 +23,29 @@ new deployment is a scripted install, not a rebuild.
 | Path | What's there |
 |---|---|
 | [`monitoring-platform/`](monitoring-platform/) | The stack itself — Docker Compose, configs, dashboards, scripts |
-| [`monitoring-platform/QUICKSTART.md`](monitoring-platform/QUICKSTART.md) | The fastest path: get it running in a few commands |
-| [`monitoring-platform/RUNBOOK.md`](monitoring-platform/RUNBOOK.md) | Beginner-friendly playbook (deploy, add servers, troubleshoot) |
+| [`monitoring-platform/RUNBOOK.md`](monitoring-platform/RUNBOOK.md) | **The Guide** — 8 short chapters, written for someone new to Prometheus and Grafana |
+| [`monitoring-platform/QUICKSTART.md`](monitoring-platform/QUICKSTART.md) | The whole install as one page of commands |
+| [`monitoring-platform/UPGRADING.md`](monitoring-platform/UPGRADING.md) | Updating a VM that is already running |
+| [`monitoring-platform/docs/`](monitoring-platform/docs/) | The chapters themselves (install, what to monitor, dashboards, alerts, environments, operations, troubleshooting, reference) |
 
 ## Get started
 
 ```bash
 cd monitoring-platform
-cp .env.example .env    # set a name, a Grafana password, and your targets
+bash scripts/setup-vm.sh   # checks the VM, installs Docker if missing
+cp .env.example .env       # set TENANT and GF_ADMIN_PASSWORD
 bash scripts/deploy.sh
 bash scripts/smoke-test.sh
 ```
 
-Full walkthrough: [monitoring-platform/README.md](monitoring-platform/README.md).
+Then open Grafana at `http://<vm>:3000` and add your first server — full walkthrough in
+**[The Guide](monitoring-platform/RUNBOOK.md)**.
 
 ## What it monitors
 
-Linux & Windows hosts, SQL Server, Kubernetes, network gear (SNMP), HTTP endpoints
-(uptime), and logs. MongoDB support is included but off by default.
+Linux and Windows hosts, SQL Server, MongoDB, Kubernetes, network gear (SNMP), websites,
+API endpoints (including ones behind an API key), and logs. Databases are opt-in, so you
+only run what you actually use.
 
 ## License
 
