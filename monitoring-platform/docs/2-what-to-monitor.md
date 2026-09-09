@@ -565,6 +565,13 @@ you put in `servers.conf` / `apis.conf` is used automatically, nothing to do.
   `instance` label, so IP-labelled history and name-labelled history are separate
   series. Nothing is deleted — the old data stays queryable under the IP — but a 30-day
   graph will look like the host appeared today. Do it once, deliberately.
+- **You will see each renamed host TWICE for a while — this is normal.** Dropdowns are
+  filled by looking back over the dashboard's whole time range, so while that range
+  still covers the period before you named the host, both the old IP entry and the new
+  name entry are listed. **Set the time picker to "Last 15 minutes" and the IP entries
+  disappear** — proof the rename worked. They stop appearing at all once your retention
+  period (`PROM_RETENTION_TIME` in `.env`) has passed. See
+  [7 — I named my hosts but still see IPs](7-troubleshooting.md#i-named-my-hosts-but-the-dashboard-still-shows-ips-often-with-duplicates).
 - **Keep to letters, digits, `-` and `_`.** Avoid spaces.
 
 ---

@@ -38,6 +38,7 @@ docker compose logs <service>   # the component itself usually explains the fail
 - [A curl query returns `bad_data … unexpected "="`](#a-curl-query-returns-bad_data--parse-error-unexpected-)
 
 **[Names and environments](#names-and-environments)**
+- [Still showing IPs, or each host listed twice](#i-named-my-hosts-but-the-dashboard-still-shows-ips-often-with-duplicates)
 - [I added `name:` but Grafana still shows the IP](#i-added-name-but-grafana-still-shows-the-ip-address)
 - [A host vanished from its graphs after I named it](#a-host-vanished-from-its-graphs-right-after-i-named-it)
 - [Two machines merged into one line](#two-machines-merged-into-one-line-on-the-dashboard)
@@ -186,6 +187,42 @@ curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="wind
 ---
 
 ## Names and environments
+
+### I named my hosts but the dashboard still shows IPs, often with duplicates
+→ **Seeing each host twice — once by name, once by IP — means the rename WORKED.** It is
+the expected transition, not a fault.
+
+A host is identified by its `instance` label, so renaming it starts a new series. The old
+IP-labelled series still holds all its past data. Dropdowns are filled by looking back
+over the **dashboard's whole time range**, so as long as that range covers the period
+before you renamed, both entries are listed.
+
+**Prove it in five seconds:** set the time picker to **Last 15 minutes**. The IP entries
+disappear and only the names remain.
+
+The IP entries stop appearing entirely once your retention period
+(`PROM_RETENTION_TIME` in `.env`) has passed — a week or two on the default settings.
+
+**To see exactly which hosts are named and which are not:**
+```bash
+curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="node"}'   | tr ',' '
+' | grep -E '"(instance|address)"'
+```
+Read it in pairs. `instance` = what dashboards show, `address` = the real IP.
+- `"instance":"app-server-01"` next to `"address":"10.1.1.11:9100"` → named correctly.
+- `"instance":"10.1.1.11:9100"` next to the same `address` → **that host has no `name:`
+  label yet**. Only hosts you actually gave a name to are renamed; the rest are untouched
+  by design.
+
+**Want the old IP series gone now rather than at retention?** That needs Prometheus'
+admin API, which is disabled by default because it can delete data. Add
+`--web.enable-admin-api` to the prometheus `command:` in `docker-compose.yml`, run
+`bash scripts/deploy.sh`, then:
+```bash
+curl -X POST -g 'http://localhost:9090/api/v1/admin/tsdb/delete_series?match[]={instance="10.1.1.11:9100"}'
+```
+⚠️ This permanently deletes that host's history. Remove the flag again afterwards.
+Waiting for retention is the safer choice.
 
 ### I added `name:` but Grafana still shows the IP address
 → 1. Is the host in its **own** `- targets:` block? A `name:` under a block listing
