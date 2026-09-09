@@ -1,8 +1,10 @@
 # kube-state-metrics exposed from the cluster via NodePort (see k8s/).
 # Empty by default — add your cluster's <node-ip>:<NodePort>, then reload Prometheus.
 #
-# - targets:
-#     - '10.0.0.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
+# `name:` is optional and controls what you see in Grafana instead of the address.
+#
+# - targets: ['10.0.0.40:30080']   # <node-ip>:<kube-state-metrics NodePort>
 #   labels:
 #     job: kube-state-metrics
+#     name: prod-cluster
 #     env: prod          # dev | staging | prod

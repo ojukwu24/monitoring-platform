@@ -49,6 +49,10 @@ The test names each resource, so `DOWN prod-sql-02` tells you exactly what to fi
 
 **Add more later:** see RUNBOOK section 5 (one recipe per server type).
 
+**Show names, not IPs:** in `prometheus/targets/*.yml` give each machine its own block
+and add a `name:` label next to `job:` — that name then appears in Grafana, alerts and
+the health check instead of `10.0.0.11:9100`. See RUNBOOK section 5-names.
+
 **Databases on/off:** `COMPOSE_PROFILES` in `.env` — `mssql`, `mongodb`, `mssql,mongodb`,
 or empty for neither. For several MongoDB servers use `mongodb/servers.conf`.
 See RUNBOOK section 4.

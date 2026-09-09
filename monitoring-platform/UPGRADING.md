@@ -18,6 +18,34 @@ container images, applies changes, and leaves everything else alone.
 
 ## ⚠️ Version notes — check these when upgrading
 
+### Servers can now show a **name** instead of an IP address
+
+Add a `name:` label to a target and that name replaces the IP everywhere — dashboards,
+alert emails, the health check. The IP is still kept, as the `address` label.
+
+Nothing to do to keep working as before: targets without a `name:` are unchanged.
+
+To adopt it, give each machine its own block in `prometheus/targets/*.yml`:
+
+```yaml
+- targets: ['10.0.0.11:9100']
+  labels:
+    job: node
+    os: linux
+    name: app-server-01
+    env: prod
+```
+
+then `curl -s -X POST http://localhost:9090/-/reload`. See RUNBOOK section **5-names**.
+
+⚠️ **Naming a host starts a fresh history for it.** Graphs identify a machine by its
+`instance` label, so data recorded under the IP and data recorded under the name are
+separate series. Nothing is deleted — the old data stays queryable under the IP — but a
+30-day graph will look like the host appeared today. Do it once, deliberately.
+
+SQL Servers, MongoDB servers and APIs already used their configured names; they are
+unaffected.
+
 ### `COMPOSE_PROFILES` now chooses which databases are monitored
 
 Previously it was only used to switch MongoDB on. It is now the on/off switch for

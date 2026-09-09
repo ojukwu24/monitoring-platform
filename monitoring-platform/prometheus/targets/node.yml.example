@@ -2,10 +2,32 @@
 # Empty by default — add only the hosts you actually have, then reload Prometheus
 # (curl -X POST http://localhost:9090/-/reload). Nothing here = nothing scraped.
 #
-# - targets:
-#     - '10.0.0.11:9100'   # linux-host-1
-#     - '10.0.0.12:9100'   # linux-host-2
+# SHOWING NAMES INSTEAD OF IPs
+# Give each host its own block with a `name:` label. That name is what you will
+# see in Grafana, in alert emails and in the health check. The IP is still kept
+# (as the `address` label) so you never lose it.
+#
+# - targets: ['10.0.0.11:9100']
 #   labels:
 #     job: node
 #     os: linux
-#     env: prod          # dev | staging | prod
+#     name: app-server-01     # <- shows as "app-server-01" instead of 10.0.0.11:9100
+#     env: prod               # dev | staging | prod
+#
+# - targets: ['10.0.0.12:9100']
+#   labels:
+#     job: node
+#     os: linux
+#     name: db-server-01
+#     env: prod
+#
+# You may still group several hosts under one block if you don't want names —
+# they simply keep showing their IP:
+#
+# - targets:
+#     - '10.0.0.13:9100'
+#     - '10.0.0.14:9100'
+#   labels:
+#     job: node
+#     os: linux
+#     env: prod

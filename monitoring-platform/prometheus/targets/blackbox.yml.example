@@ -1,9 +1,17 @@
 # Endpoints to probe for uptime (full URLs for the http_2xx module).
 # Empty by default — add your endpoints, then reload Prometheus.
 #
-# - targets:
-#     - 'https://client-website.example.com'
-#     - 'https://api.client.example.com/health'
+# `name:` is optional and controls what you see in Grafana instead of the full URL.
+# One block per endpoint, because each endpoint has its own name.
+#
+# - targets: ['https://client-website.example.com']
 #   labels:
 #     job: blackbox
+#     name: company-website
 #     env: prod          # dev | staging | prod
+#
+# - targets: ['https://api.client.example.com/health']
+#   labels:
+#     job: blackbox
+#     name: public-api-health
+#     env: prod

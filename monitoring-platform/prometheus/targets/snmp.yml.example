@@ -1,9 +1,17 @@
 # SNMP-enabled network devices (device IP only, no port).
 # Empty by default — add your devices, set the community in snmp/snmp.yml, then reload.
 #
-# - targets:
-#     - '10.0.0.1'    # core-switch
-#     - '10.0.0.2'    # firewall
+# `name:` is optional and controls what you see in Grafana instead of the IP.
+# One block per device, because each device has its own name.
+#
+# - targets: ['10.0.0.1']
 #   labels:
 #     job: snmp
+#     name: core-switch
 #     env: prod          # dev | staging | prod
+#
+# - targets: ['10.0.0.2']
+#   labels:
+#     job: snmp
+#     name: edge-firewall
+#     env: prod

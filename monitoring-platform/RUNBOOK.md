@@ -374,8 +374,10 @@ list of addresses) and tell Prometheus to re-read it.
 **General pattern for any target:**
 1. Open the matching file in `prometheus/targets/`.
 2. Remove the `#` from the example lines and put in your real address.
-3. Run: `curl -s -X POST http://localhost:9090/-/reload` (tells Prometheus to re-read — no restart needed).
-4. Check **Prometheus → Status → Targets** in the browser, or re-run the smoke test.
+3. Optionally add a `name:` label so Grafana shows the machine's **name instead of its
+   IP** — see **5-names** just below.
+4. Run: `curl -s -X POST http://localhost:9090/-/reload` (tells Prometheus to re-read — no restart needed).
+5. Check **Prometheus → Status → Targets** in the browser, or re-run the smoke test.
 
 **Which file for what:**
 
@@ -409,16 +411,75 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
 > A full restart (`docker compose restart prometheus`) *would* cause a few-second
 > scraping gap — stored data still survives in the Docker volume — so prefer reload.
 
+### 5-names. Show **names** instead of IP addresses (read this first)
+
+By default a machine is identified by its address, so Grafana, alert emails and the
+health check all say `10.0.0.11:9100`. Nobody thinks in IPs. To see `app-server-01`
+instead, add a **`name:` label** to that target.
+
+Two rules, and that's the whole feature:
+
+1. **One block per machine.** The `name:` belongs to *one* machine, so each machine
+   needs its own `- targets:` block. (Several machines can still share a block if you
+   are happy for them to show their IPs.)
+2. **`name:` goes under `labels:`**, alongside `job:` and `env:`.
+
+```yaml
+# Two named Linux servers — note the separate blocks
+- targets: ['10.0.0.11:9100']
+  labels:
+    job: node
+    os: linux
+    name: app-server-01        # <- this is what you will see everywhere
+    env: prod
+
+- targets: ['10.0.0.12:9100']
+  labels:
+    job: node
+    os: linux
+    name: db-server-01
+    env: prod
+```
+
+Then reload: `curl -s -X POST http://localhost:9090/-/reload`
+
+Within about a minute the host dropdowns and panels show `app-server-01`.
+
+**Where it works:** Linux (`node.yml`), Windows (`windows.yml`), Kubernetes
+(`kubernetes.yml`), network devices (`snmp.yml`) and websites (`blackbox.yml`).
+SQL Servers, MongoDB servers and APIs are **already named** — the name you put in
+`mssql/servers.conf`, `mongodb/servers.conf` and `blackbox/apis.conf` is used
+automatically, nothing to do.
+
+**Things worth knowing:**
+
+- **You do not lose the IP.** It is still kept on every metric as the `address`
+  label. In Grafana, hover a series or open a panel's *Inspect → Data* to see it,
+  or query `up{name_you_gave=...}` — e.g.
+  `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{instance="app-server-01"}'`
+  and look at the `address` label in the answer.
+- **Names must be unique.** Two machines named `web-01` will be merged into one
+  line on every dashboard. Include the environment if names repeat across
+  environments: `prod-web-01`, `staging-web-01`.
+- **Naming a machine starts a new history for it.** Graphs identify a machine by
+  its `instance` label, so the old IP-labelled history and the new name-labelled
+  history are two different series. Nothing is deleted — old data stays queryable
+  under the IP — but a graph of the last 30 days will look like the host appeared
+  today. Best done once, deliberately, rather than renaming repeatedly.
+- **Names are free text**, but keep to letters, digits, `-` and `_`. Avoid spaces.
+
+---
+
 ### 5a. Linux server
 1. On that Linux box, install **node_exporter** (listens on port 9100) and open its
    firewall to the monitoring VM only.
 2. Edit `prometheus/targets/node.yml`:
    ```yaml
-   - targets:
-       - '192.168.1.20:9100'   # my-linux-box
+   - targets: ['192.168.1.20:9100']
      labels:
        job: node
        os: linux
+       name: my-linux-box      # optional — shows this instead of the IP
    ```
 3. Reload. Dashboard: **Node Exporter Full**.
 
@@ -431,11 +492,11 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
    ```
 3. Edit `prometheus/targets/windows.yml`:
    ```yaml
-   - targets:
-       - '192.168.1.30:9182'   # my-windows-server
+   - targets: ['192.168.1.30:9182']
      labels:
        job: windows
        os: windows
+       name: my-windows-server   # optional — shows this instead of the IP
    ```
 4. Reload. Verify the scrape works before opening the dashboard:
    ```bash
@@ -448,13 +509,17 @@ Then confirm at **Prometheus → Status → Targets** in the browser.
 
 ### 5c. Website / URL is-it-up
 No install needed — the blackbox exporter is already running.
-1. Edit `prometheus/targets/blackbox.yml`:
+1. Edit `prometheus/targets/blackbox.yml` — one block per URL if you want names:
    ```yaml
-   - targets:
-       - 'https://myapp.example.com'
-       - 'https://api.example.com/health'
+   - targets: ['https://myapp.example.com']
      labels:
        job: blackbox
+       name: myapp-website       # optional — shows this instead of the full URL
+
+   - targets: ['https://api.example.com/health']
+     labels:
+       job: blackbox
+       name: api-health
    ```
 2. Reload. Dashboard: **Blackbox Exporter**.
 
@@ -463,13 +528,17 @@ No install needed — the blackbox exporter is already running.
 2. If the community is not `public`, set it in `snmp/snmp.yml` (the `community:` line),
    then apply that config change with a restart:
    `docker compose restart snmp-exporter`.
-3. Edit `prometheus/targets/snmp.yml` — **IP only, no port**:
+3. Edit `prometheus/targets/snmp.yml` — **IP only, no port**, one block per device:
    ```yaml
-   - targets:
-       - '192.168.1.1'   # core-switch
-       - '192.168.1.2'   # firewall
+   - targets: ['192.168.1.1']
      labels:
        job: snmp
+       name: core-switch         # optional — shows this instead of the IP
+
+   - targets: ['192.168.1.2']
+     labels:
+       job: snmp
+       name: edge-firewall
    ```
 4. Reload. Dashboard: **SNMP Exporter**.
 
@@ -478,10 +547,10 @@ No install needed — the blackbox exporter is already running.
    full steps are in `k8s/kube-state-metrics-install.md`.
 2. Edit `prometheus/targets/kubernetes.yml` — any cluster node IP + the NodePort:
    ```yaml
-   - targets:
-       - '192.168.1.40:30080'   # <node-ip>:<kube-state-metrics NodePort>
+   - targets: ['192.168.1.40:30080']   # <node-ip>:<kube-state-metrics NodePort>
      labels:
        job: kube-state-metrics
+       name: prod-cluster        # optional — shows this instead of the IP
    ```
 3. Reload. Dashboard: **Kubernetes**.
 
@@ -810,7 +879,13 @@ In the target files, add `env:` alongside `job:`. Group them per environment:
     env: dev
 ```
 The same pattern works in `windows.yml`, `blackbox.yml`, `snmp.yml`, and
-`kubernetes.yml`. Then reload:
+`kubernetes.yml`.
+
+> **Tip:** if you also want each host to show its **name** instead of its IP, give it
+> its own block and add `name:` next to `env:` — see section 5-names. Keep names
+> unique across environments (`prod-app-01`, `staging-app-01`).
+
+Then reload:
 ```bash
 curl -s -X POST http://localhost:9090/-/reload
 ```
@@ -1014,6 +1089,33 @@ curl -s -X POST http://localhost:9090/-/reload   # reload targets after editing 
   3) A typo in `servers.conf` (missing DSN, stray space in the name) makes that one line
      fail while the rest work — re-run `bash scripts/deploy.sh` and read its output; it
      prints the list of servers it loaded.
+
+**I added `name:` but Grafana still shows the IP address**
+→ 1) Is the host in its **own** `- targets:` block? A `name:` under a block that lists
+     several addresses is applied to all of them — split them up (section 5-names).
+  2) `name:` must be indented under `labels:`, at the same level as `job:`.
+  3) Reload and check what Prometheus actually sees:
+     `curl -s -X POST http://localhost:9090/-/reload`
+     `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="node"}'`
+     The `instance` label in the answer is what dashboards will show.
+  4) Grafana dropdowns cache their options for a short while — refresh the page.
+  5) `docker compose logs prometheus | tail -20` — a YAML mistake in the target file is
+     reported there and the whole file is ignored until you fix it.
+
+**A host vanished from its graphs right after I named it**
+→ Expected, and nothing was lost. A machine is identified by its `instance` label, so
+  the old IP-labelled history and the new name-labelled history are separate series.
+  The old data is still there under the IP; new data accumulates under the name. Pick
+  the names you want and set them once.
+
+**Two machines merged into one line on the dashboard**
+→ You gave them the same `name:`. Names must be unique across everything Prometheus
+  watches. Prefix with the environment if they repeat: `prod-web-01`, `staging-web-01`.
+
+**I want to see the IP of a named host**
+→ It is still on every metric as the `address` label:
+  `curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{instance="app-server-01"}'`
+  In Grafana, a panel's **Inspect → Data** shows it too.
 
 **All SQL Servers show as `mssql-exporter:9399` instead of their names**
 → The `honor_labels: true` setting on the `mssql` job in `prometheus/prometheus.yml` is
