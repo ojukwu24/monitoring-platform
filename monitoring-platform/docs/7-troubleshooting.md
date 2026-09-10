@@ -38,6 +38,7 @@ docker compose logs <service>   # the component itself usually explains the fail
 - [A curl query returns `bad_data … unexpected "="`](#a-curl-query-returns-bad_data--parse-error-unexpected-)
 
 **[Names and environments](#names-and-environments)**
+- [Hosts disappeared or lost their name/env after an edit](#some-hosts-disappeared-or-lost-their-name-and-environment-after-i-edited-a-target-file)
 - [Still showing IPs, or each host listed twice](#i-named-my-hosts-but-the-dashboard-still-shows-ips-often-with-duplicates)
 - [I added `name:` but Grafana still shows the IP](#i-added-name-but-grafana-still-shows-the-ip-address)
 - [A host vanished from its graphs after I named it](#a-host-vanished-from-its-graphs-right-after-i-named-it)
@@ -187,6 +188,34 @@ curl -sG http://localhost:9090/api/v1/query --data-urlencode 'query=up{job="wind
 ---
 
 ## Names and environments
+
+### Some hosts disappeared, or lost their name and environment, after I edited a target file
+→ Almost always a **misspelled `labels:`**. `lables:` is the classic, and YAML accepts it
+happily — it just becomes a key Prometheus ignores, so that whole block loses its `job`,
+`name`, `os` and `env`. The host stops matching `job="node"` and vanishes from the
+dashboards even though it is still being scraped.
+
+Find every instance of it, in one command:
+```bash
+bash scripts/check-targets.sh
+```
+```
+  line 132  'lables:' is not a valid key here — did you mean 'labels:'?
+  line 117  duplicate address 10.1.1.171:9100 (already on line 19)
+  line 135  duplicate name RC-k8s8-wkr1 (already on line 121)
+```
+
+Fix the spelling everywhere at once:
+```bash
+sed -i 's/^\( *\)lables:/labels:/' prometheus/targets/node.yml
+bash scripts/check-targets.sh          # re-check — must pass before you reload
+curl -s -X POST http://localhost:9090/-/reload
+```
+
+The same check also catches **the same address listed twice** (that host is scraped twice
+and shows twice on every dashboard) and **the same `name:` on two different hosts** (they
+merge into a single line). Both need a human decision about which entry is right — the
+checker tells you the line numbers, you choose.
 
 ### I named my hosts but the dashboard still shows IPs, often with duplicates
 → **Seeing each host twice — once by name, once by IP — means the rename WORKED.** It is

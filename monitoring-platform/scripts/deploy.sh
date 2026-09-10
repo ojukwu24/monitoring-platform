@@ -105,6 +105,11 @@ if curl -sf -X POST http://localhost:9090/-/reload >/dev/null 2>&1; then
   echo "  reloaded prometheus config"
 fi
 
+# Lint the target files. A misspelled `labels:` or a duplicated address makes
+# hosts silently vanish from the dashboards, which is very hard to spot by eye.
+targets_ok=0
+bash scripts/check-targets.sh >/tmp/check-targets.$$ 2>&1 || targets_ok=1
+
 # Loud warning if something is configured but its profile is off — otherwise the
 # config renders fine, no exporter runs, and the dashboards stay mysteriously empty.
 warn=""
@@ -130,6 +135,19 @@ if [ -n "$warn" ]; then
   echo "  Fix:     set COMPOSE_PROFILES=mssql,mongodb  then re-run this script"
   echo "***********************************************************************"
 fi
+
+if [ "$targets_ok" -ne 0 ]; then
+  echo
+  echo "***********************************************************************"
+  echo "  WARNING — problems found in your target files:"
+  echo
+  sed 's/^/  /' /tmp/check-targets.$$
+  echo
+  echo "  Those hosts will NOT appear correctly until this is fixed."
+  echo "  Re-check with: bash scripts/check-targets.sh"
+  echo "***********************************************************************"
+fi
+rm -f /tmp/check-targets.$$
 
 echo
 echo "Deployed. Grafana:      http://localhost:3000  (user: ${GF_ADMIN_USER})"

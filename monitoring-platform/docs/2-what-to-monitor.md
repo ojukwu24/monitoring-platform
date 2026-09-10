@@ -26,11 +26,18 @@ There are only **two patterns** in this whole chapter.
 ### Pattern A — a machine: edit a target file, then reload
 
 A "target file" is a plain list of addresses in `prometheus/targets/`. You add a line,
-then tell Prometheus to re-read it:
+**check it**, then tell Prometheus to re-read it:
 
 ```bash
-curl -s -X POST http://localhost:9090/-/reload
+bash scripts/check-targets.sh                     # catches typos BEFORE they bite
+curl -s -X POST http://localhost:9090/-/reload    # apply
 ```
+
+**Always run the check first.** These files are indentation-sensitive YAML, and the
+usual mistakes are invisible to the eye: a misspelled `labels:` (`lables:` is the classic)
+throws away that host's job, name and environment; the same address listed twice gets
+scraped twice; the same `name:` on two hosts merges them into one line. The checker names
+the line number for each. It runs automatically at the end of `deploy.sh` too.
 
 ### Pattern B — a database or API: edit a `.conf` file, then deploy
 

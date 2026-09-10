@@ -84,6 +84,7 @@ deployment pipeline.
 git pull                        # get the latest version of this repo
 bash scripts/deploy.sh          # start / re-apply everything (safe to re-run any time)
 bash scripts/smoke-test.sh      # health check
+bash scripts/check-targets.sh   # check target files for typos before reloading
 bash scripts/test-alert.sh      # send a test alert (proves email/chat works)
 
 docker compose ps               # see which programs are running
