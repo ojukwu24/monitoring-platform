@@ -207,7 +207,7 @@ bash scripts/check-targets.sh
 
 Fix the spelling everywhere at once:
 ```bash
-sed -i 's/^\( *\)lables:/labels:/' prometheus/targets/node.yml
+sed -i 's/lables:/labels:/' prometheus/targets/node.yml
 bash scripts/check-targets.sh          # re-check — must pass before you reload
 curl -s -X POST http://localhost:9090/-/reload
 ```
