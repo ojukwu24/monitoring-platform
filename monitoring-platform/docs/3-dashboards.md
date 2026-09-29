@@ -58,7 +58,41 @@ top shows one, some, or all of them. See [chapter 5](5-environments.md).
 
 ---
 
-## 3.2 The per-system dashboards
+## 3.2 Single-screen wallboards — one per area
+
+The NOC Overview shows everything, so it scrolls. For a SOC/NOC wall with several
+screens, give each screen one of these instead. Each is built to fit a 1080p screen in
+kiosk mode **with no scrolling**, and has the same Environment selector.
+
+| Wallboard | URL | Shows |
+|---|---|---|
+| 🖥️ **Servers** | `/d/wall-servers` | UP/DOWN counts, hosts over CPU/memory/disk limits, status tile per host, CPU/memory/disk bars, CPU trend, server alerts |
+| 🗄️ **Databases** | `/d/wall-databases` | SQL Server and MongoDB UP/DOWN, low PLE, page life expectancy, buffer cache, connections, database alerts |
+| ☸️ **Kubernetes Cluster** | `/d/wall-k8s-cluster` | Node readiness and pressure, pods by phase, CPU/memory requested vs allocatable per node, cluster alerts |
+| ☸️ **Kubernetes Workloads** | `/d/wall-k8s-workloads` | Degraded deployments / StatefulSets / DaemonSets, failed jobs, pods not running, top restarting containers, pods per namespace |
+| 🔌 **APIs & Network** | `/d/wall-endpoints` | API and website UP/DOWN, response times, TLS certificate days left, SNMP devices |
+
+The Kubernetes boards also have a **Cluster** selector (the `name:` you gave the
+kube-state-metrics target), so two screens can show two different clusters.
+
+**Pin a screen to one environment** with `var-env` in the URL — kiosk mode hides the
+dropdowns, so the URL is how you switch a TV:
+
+```
+http://<vm-ip>:3000/d/wall-servers?kiosk&var-env=prod
+http://<vm-ip>:3000/d/wall-servers?kiosk&var-env=staging
+http://<vm-ip>:3000/d/wall-k8s-cluster?kiosk&var-env=prod&var-cluster=prod-cluster
+```
+
+Every board (and the NOC Overview) has links along the top to jump between them.
+
+**Changing a wallboard:** they are generated. Edit `scripts/build-wallboards.py`, run
+`python3 scripts/build-wallboards.py`, and commit the regenerated `wall-*.json`. The
+script refuses to build a board taller than one screen.
+
+---
+
+## 3.3 The per-system dashboards
 
 Use these when the NOC Overview tells you *something* is wrong and you want the detail.
 
@@ -80,7 +114,7 @@ Leave a dropdown on **All** to compare everything side by side.
 
 ---
 
-## 3.3 Reading logs
+## 3.4 Reading logs
 
 Logs are not on a dashboard. Go to **Explore** (compass icon) → pick the **Loki**
 datasource → choose a label such as `host` or `job` to start. See
@@ -89,7 +123,7 @@ place.
 
 ---
 
-## 3.4 Two rules about dashboards
+## 3.5 Two rules about dashboards
 
 1. **Don't delete a provisioned dashboard from the Grafana UI.** It leaves an orphaned
    provisioning record, and Grafana then refuses to recreate it, logging

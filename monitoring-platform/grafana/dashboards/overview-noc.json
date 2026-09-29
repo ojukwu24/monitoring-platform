@@ -592,7 +592,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) or 100 * (1 - windows_os_physical_memory_free_bytes{env=~\"$env\"} / windows_cs_physical_memory_bytes{env=~\"$env\"})",
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes{env=~\"$env\"} / node_memory_MemTotal_bytes{env=~\"$env\"}) or 100 * (1 - windows_os_physical_memory_free_bytes{env=~\"$env\"} / windows_cs_physical_memory_bytes{env=~\"$env\"})",
           "legendFormat": "{{instance}}",
           "datasource": {
             "type": "prometheus",
@@ -1651,6 +1651,43 @@
           }
         }
       ]
+    }
+  ],
+  "links": [
+    {
+      "title": "\ud83d\udda5\ufe0f Wall \u2014 Servers",
+      "type": "link",
+      "url": "/d/wall-servers",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "\ud83d\uddc4\ufe0f Wall \u2014 Databases",
+      "type": "link",
+      "url": "/d/wall-databases",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "\u2638\ufe0f Wall \u2014 Kubernetes Cluster",
+      "type": "link",
+      "url": "/d/wall-k8s-cluster",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "\u2638\ufe0f Wall \u2014 Kubernetes Workloads",
+      "type": "link",
+      "url": "/d/wall-k8s-workloads",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "\ud83d\udd0c Wall \u2014 APIs & Network",
+      "type": "link",
+      "url": "/d/wall-endpoints",
+      "keepTime": true,
+      "includeVars": true
     }
   ]
 }
