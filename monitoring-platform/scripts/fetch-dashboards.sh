@@ -16,7 +16,7 @@ FORCE=0
 [ "${1:-}" = "--force" ] && FORCE=1
 
 # Community dashboards fetched from grafana.com. Hand-built dashboards in this repo
-# (overview-noc.json, mssql.json) are NOT listed here and are never overwritten.
+# (overview-noc.json, mssql.json, wall-*.json) are NOT listed here and are never overwritten.
 # id:filename
 DASHBOARDS=(
   "1860:node-exporter-full.json"
