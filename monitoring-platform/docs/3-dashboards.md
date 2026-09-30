@@ -86,6 +86,13 @@ http://<vm-ip>:3000/d/wall-k8s-cluster?kiosk&var-env=prod&var-cluster=prod-clust
 
 Every board (and the NOC Overview) has links along the top to jump between them.
 
+**Only one kind of database?** The Databases board follows `COMPOSE_PROFILES` in
+`.env`. With `COMPOSE_PROFILES=mongodb` (no SQL Server) `deploy.sh` builds it
+MongoDB-only — replica health, connections, cache, queued operations — and with
+`COMPOSE_PROFILES=mssql` SQL Server-only. With both, it shows both. Because the board
+is rebuilt on the VM, `git status` there shows `wall-databases.json` as modified; that
+is expected.
+
 **Changing a wallboard:** they are generated. Edit `scripts/build-wallboards.py`, run
 `python3 scripts/build-wallboards.py`, and commit the regenerated `wall-*.json`. The
 script refuses to build a board taller than one screen.

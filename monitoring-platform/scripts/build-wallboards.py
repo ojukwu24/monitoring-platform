@@ -8,6 +8,10 @@ board is at most MAX_HEIGHT grid units tall.
 
 Edit this file, then run it and commit the regenerated JSON:
     python3 scripts/build-wallboards.py
+
+The Databases board is built for the engines a site actually runs. deploy.sh
+rebuilds it on the VM from COMPOSE_PROFILES (via WALL_DATABASES); the committed
+JSON is the default with both SQL Server and MongoDB.
 Depends only on the Python 3 standard library.
 """
 import json
@@ -172,7 +176,41 @@ def servers():
     ]
 
 
+def _db_engines():
+    """Which database engines this site runs, from WALL_DATABASES ("mssql",
+    "mongodb" or "mssql,mongodb"). deploy.sh sets it from COMPOSE_PROFILES so a
+    site with no SQL Server does not get a half-empty board. Default: both."""
+    raw = os.environ.get("WALL_DATABASES", "")
+    picked = {e.strip() for e in raw.split(",")} & {"mssql", "mongodb"}
+    return picked or {"mssql", "mongodb"}
+
+
 def databases():
+    engines = _db_engines()
+    if engines == {"mongodb"}:
+        return databases_mongodb()
+    if engines == {"mssql"}:
+        return databases_mssql()
+    return databases_both()
+
+
+def _sql_bars():
+    return [
+        bars("SQL — Page Life Expectancy (s)", 'mssql_page_life_expectancy{env=~"$env"}',
+             "{{instance}}", "s", _steps(("red", None), (AMBER, 300), ("green", 1000)), 0),
+        bars("SQL — Buffer cache hit %", 'mssql_buffer_cache_hit_ratio{env=~"$env"}',
+             "{{instance}}", "percent", _steps(("red", None), (AMBER, 90), ("green", 95)), 0, 100),
+        bars("SQL — Active connections", 'sum by(instance) (mssql_connections{env=~"$env"})',
+             "{{instance}}", "short", _steps(("green", None))),
+    ]
+
+
+MONGO_CONN = 'sum by(instance) (mongodb_ss_connections{conn_type="current", env=~"$env"})'
+MONGO_QUEUE = 'sum by(instance) (mongodb_ss_globalLock_currentQueue{env=~"$env"})'
+
+
+def databases_both():
+    ple, cache, conns = _sql_bars()
     return [
         (good_count("SQL Servers UP", 'count(mssql_up{env=~"$env"} == 1) or vector(0)'), 0, 0, 4, 3),
         (bad_count("SQL Servers DOWN", 'count(mssql_up{env=~"$env"} == 0) or vector(0)'), 4, 0, 4, 3),
@@ -187,20 +225,64 @@ def databases():
                 "no SQL Servers configured"), 0, 3, 12, 6),
         (updown("MongoDB status", 'mongodb_up{env=~"$env"}', "{{instance}}",
                 "no MongoDB configured"), 12, 3, 12, 6),
-        (bars("SQL — Page Life Expectancy (s)", 'mssql_page_life_expectancy{env=~"$env"}',
-              "{{instance}}", "s", _steps(("red", None), (AMBER, 300), ("green", 1000)), 0),
-         0, 9, 8, 6),
-        (bars("SQL — Buffer cache hit %", 'mssql_buffer_cache_hit_ratio{env=~"$env"}',
-              "{{instance}}", "percent", _steps(("red", None), (AMBER, 90), ("green", 95)), 0, 100),
-         8, 9, 8, 6),
-        (bars("SQL — Active connections", 'sum by(instance) (mssql_connections{env=~"$env"})',
-              "{{instance}}", "short", _steps(("green", None))), 16, 9, 8, 6),
-        (trend("MongoDB — current connections",
-               'sum by(instance) (mongodb_ss_connections{conn_type="current", env=~"$env"})',
-               "{{instance}}", "short"), 0, 15, 8, 7),
+        (ple, 0, 9, 8, 6),
+        (cache, 8, 9, 8, 6),
+        (conns, 16, 9, 8, 6),
+        (trend("MongoDB — current connections", MONGO_CONN, "{{instance}}", "short"), 0, 15, 8, 7),
         (trend("SQL — connections — last hour", 'sum by(instance) (mssql_connections{env=~"$env"})',
                "{{instance}}", "short"), 8, 15, 8, 7),
         (alerts_table("Database alerts firing", ', job=~"mssql|mongodb"'), 16, 15, 8, 7),
+    ]
+
+
+def databases_mssql():
+    ple, cache, conns = _sql_bars()
+    return [
+        (good_count("SQL Servers UP", 'count(mssql_up{env=~"$env"} == 1) or vector(0)'), 0, 0, 6, 3),
+        (bad_count("SQL Servers DOWN", 'count(mssql_up{env=~"$env"} == 0) or vector(0)'), 6, 0, 6, 3),
+        (warn_count("Low PLE (< 300s)",
+                    'count(mssql_page_life_expectancy{env=~"$env"} < 300) or vector(0)'), 12, 0, 6, 3),
+        (bad_count("Database alerts",
+                   'count(ALERTS{alertstate="firing", job="mssql", env=~"$env"}) or vector(0)'),
+         18, 0, 6, 3),
+        (updown("SQL Server status", 'mssql_up{env=~"$env"}', "{{instance}}",
+                "no SQL Servers configured"), 0, 3, 24, 6),
+        (ple, 0, 9, 8, 6),
+        (cache, 8, 9, 8, 6),
+        (conns, 16, 9, 8, 6),
+        (trend("SQL — connections — last hour", 'sum by(instance) (mssql_connections{env=~"$env"})',
+               "{{instance}}", "short"), 0, 15, 12, 7),
+        (alerts_table("Database alerts firing", ', job="mssql"'), 12, 15, 12, 7),
+    ]
+
+
+def databases_mongodb():
+    cache = ('100 * mongodb_ss_wt_cache_bytes_currently_in_the_cache{env=~"$env"}'
+             ' / mongodb_ss_wt_cache_maximum_bytes_configured{env=~"$env"}')
+    return [
+        (good_count("MongoDB UP", 'count(mongodb_up{env=~"$env"} == 1) or vector(0)'), 0, 0, 5, 3),
+        (bad_count("MongoDB DOWN", 'count(mongodb_up{env=~"$env"} == 0) or vector(0)'), 5, 0, 5, 3),
+        (bad_count("Replica members unhealthy",
+                   'count(mongodb_rs_members_health{env=~"$env"} == 0) or vector(0)'), 10, 0, 5, 3),
+        (warn_count("Servers with queued ops (> 50)",
+                    'count(%s > 50) or vector(0)' % MONGO_QUEUE), 15, 0, 5, 3),
+        (bad_count("Database alerts",
+                   'count(ALERTS{alertstate="firing", job="mongodb", env=~"$env"}) or vector(0)'),
+         20, 0, 4, 3),
+        (updown("MongoDB status", 'mongodb_up{env=~"$env"}', "{{instance}}",
+                "no MongoDB configured"), 0, 3, 24, 6),
+        (bars("Current connections", MONGO_CONN, "{{instance}}", "short",
+              _steps(("green", None), (AMBER, 3000), ("red", 5000)), 0), 0, 9, 8, 6),
+        # WiredTiger holds its cache near 80% by design, so warn later than pct_used does.
+        (bars("WiredTiger cache used %", cache, "{{instance}}", "percent",
+              _steps(("green", None), (AMBER, 85), ("red", 95)), 0, 100), 8, 9, 8, 6),
+        (bars("Queued operations", MONGO_QUEUE, "{{instance}}", "short",
+              _steps(("green", None), (AMBER, 20), ("red", 50)), 0), 16, 9, 8, 6),
+        (trend("Operations / sec",
+               'sum by(instance) (rate(mongodb_ss_opcounters{env=~"$env"}[5m]))',
+               "{{instance}}", "ops"), 0, 15, 8, 7),
+        (trend("Current connections — last hour", MONGO_CONN, "{{instance}}", "short"), 8, 15, 8, 7),
+        (alerts_table("Database alerts firing", ', job="mongodb"'), 16, 15, 8, 7),
     ]
 
 
