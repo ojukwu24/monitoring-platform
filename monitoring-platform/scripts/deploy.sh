@@ -83,6 +83,17 @@ bash scripts/render-mongodb-config.sh
 # Fetch dashboards (idempotent).
 bash scripts/fetch-dashboards.sh
 
+# Build the Databases wallboard for the engines this site runs, so a site with
+# no SQL Server (or no MongoDB) doesn't get a half-empty board. Anything other
+# than exactly one of the two profiles keeps the default board showing both.
+if command -v python3 >/dev/null 2>&1; then
+  WALL_DATABASES=$(echo "${COMPOSE_PROFILES:-}" | tr ',' '\n' | grep -xE 'mssql|mongodb' | paste -sd, -) \
+    python3 scripts/build-wallboards.py >/dev/null \
+    && echo "Built wallboards (databases: ${COMPOSE_PROFILES:-mssql,mongodb})"
+else
+  echo "NOTE: python3 not found — keeping the default wallboards from the repo."
+fi
+
 # Bring up the stack.
 docker compose pull
 # --remove-orphans deletes containers whose service no longer exists (e.g. an
