@@ -9,9 +9,10 @@ board is at most MAX_HEIGHT grid units tall.
 Edit this file, then run it and commit the regenerated JSON:
     python3 scripts/build-wallboards.py
 
-The Databases board is built for the engines a site actually runs. deploy.sh
-rebuilds it on the VM from COMPOSE_PROFILES (via WALL_DATABASES); the committed
-JSON is the default with both SQL Server and MongoDB.
+The Databases board is built for the engines a site actually runs, and the NOC
+Overview loses the panels of an engine the site doesn't run. deploy.sh does this
+on the VM from COMPOSE_PROFILES (via WALL_DATABASES); the committed JSON is the
+default with both SQL Server and MongoDB.
 Depends only on the Python 3 standard library.
 """
 import json
@@ -417,6 +418,53 @@ def dashboard(uid, title, layout, variables):
             "annotations": {"list": []}, "links": links(), "panels": panels}
 
 
+def adapt_noc(engines):
+    """Hide the NOC Overview panels of a database engine this site doesn't run.
+
+    overview-noc.json is hand-written, so this edits it in place: panels whose
+    queries read the missing engine's metrics are dropped and their neighbours
+    on the same line widen to fill the gap. With both engines it does nothing.
+    To bring the panels back later: git checkout -- grafana/dashboards/overview-noc.json
+    """
+    drop = {"mssql": "mssql_", "mongodb": "mongodb_"}
+    prefixes = [v for k, v in drop.items() if k not in engines]
+    if not prefixes:
+        return False
+    path = os.path.join(OUT, "overview-noc.json")
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    def unwanted(panel):
+        return any(pre in t.get("expr", "") for t in panel.get("targets", []) for pre in prefixes)
+
+    gone = [p for p in data["panels"] if unwanted(p)]
+    if not gone:
+        return False
+    data["panels"] = [p for p in data["panels"] if not unwanted(p)]
+    for y in {p["gridPos"]["y"] for p in gone}:
+        line = sorted((p for p in data["panels"] if p["gridPos"]["y"] == y and p["type"] != "row"),
+                      key=lambda p: p["gridPos"]["x"])
+        total = sum(p["gridPos"]["w"] for p in line)
+        exact = [p["gridPos"]["w"] * 24 / total for p in line]
+        widths = [int(e) for e in exact]
+        # hand the leftover columns to the panels that lost most to rounding down
+        for i in sorted(range(len(line)), key=lambda i: widths[i] - exact[i])[:24 - sum(widths)]:
+            widths[i] += 1
+        x = 0
+        for p, w in zip(line, widths):
+            p["gridPos"].update(x=x, w=w)
+            x += w
+    kept = " & ".join(n for k, n in (("mssql", "SQL Server"), ("mongodb", "MongoDB")) if k in engines)
+    for p in data["panels"]:
+        if p["type"] == "row" and "SQL Server & MongoDB" in p.get("title", ""):
+            p["title"] = p["title"].replace("SQL Server & MongoDB", kept)
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(data, fh, indent=2)
+        fh.write("\n")
+    print("adapted", os.path.normpath(path), "- removed:", ", ".join(p["title"] for p in gone))
+    return True
+
+
 def main():
     builders = {"wall-servers": (servers, [env_var()]),
                 "wall-databases": (databases, [env_var()]),
@@ -430,6 +478,7 @@ def main():
             json.dump(dashboard(uid, title, build(), variables), fh, indent=2)
             fh.write("\n")
         print("wrote", os.path.normpath(path))
+    adapt_noc(_db_engines())
 
 
 if __name__ == "__main__":

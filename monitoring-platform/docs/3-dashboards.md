@@ -93,6 +93,11 @@ MongoDB-only — replica health, connections, cache, queued operations — and w
 is rebuilt on the VM, `git status` there shows `wall-databases.json` as modified; that
 is expected.
 
+The **NOC Overview** follows the same setting: the tiles of the engine you don't run
+are removed and their neighbours widen to fill the space. If you later add that engine,
+restore them with `git checkout -- grafana/dashboards/overview-noc.json` and re-run
+`deploy.sh`.
+
 **Changing a wallboard:** they are generated. Edit `scripts/build-wallboards.py`, run
 `python3 scripts/build-wallboards.py`, and commit the regenerated `wall-*.json`. The
 script refuses to build a board taller than one screen.
