@@ -6,6 +6,7 @@ mssql/servers.conf
 blackbox/blackbox.yml
 blackbox/apis.conf
 prometheus/targets/api.yml
+prometheus/targets/transactions.yml
 
 # transient render artefacts
 *.tmp
@@ -22,3 +23,6 @@ mongodb/servers.conf
 prometheus/targets/mssql.yml
 prometheus/targets/mongodb.yml
 docker-compose.override.yml
+
+# Python bytecode
+__pycache__/

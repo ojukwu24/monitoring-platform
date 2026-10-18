@@ -137,6 +137,47 @@ groups:
         annotations:
           summary: "API {{ $labels.api }} responding slowly ({{ $value }}s)"
 
+  - name: transactions
+    rules:
+      - alert: TxnFeedFailing
+        # The poller can't read the transaction API, so the wall is going stale.
+        expr: txn_poll_success == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Transaction feed can't read the API — see: docker compose logs txn-poller"
+
+      - alert: TxnFeedUnauthorized
+        expr: sum by(env) (increase(txn_poll_errors_total{reason=~"http_401|http_403"}[10m])) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Transaction API refused the key (401/403) — check TXN_API_KEY"
+
+      - alert: TxnLowSuccessRate
+        # Needs at least 20 transactions in the window, so one failure at 3am
+        # out of two transactions doesn't page anyone.
+        expr: |
+          (sum by(env, service) (increase(txn_transactions_total{result="success"}[15m]))
+           / sum by(env, service) (increase(txn_transactions_total[15m]))) < 0.95
+          and sum by(env, service) (increase(txn_transactions_total[15m])) >= 20
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Transactions for {{ $labels.service }} only {{ $value | humanizePercentage }} successful (15m)"
+
+      - alert: TxnProviderSlow
+        expr: |
+          histogram_quantile(0.95,
+            sum by(env, provider, le) (rate(txn_provider_response_seconds_bucket[15m]))) > 5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Content provider {{ $labels.provider }} p95 response {{ $value | humanizeDuration }}"
+
   - name: kubernetes
     rules:
       - alert: KubePodCrashLooping

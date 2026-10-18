@@ -16,6 +16,7 @@ in any order.
 - [2.9 Logs from a machine](#29-logs-from-a-machine)
 - [2.10 Show names instead of IP addresses](#210-show-names-instead-of-ip-addresses)
 - [2.11 Turning a database on or off](#211-turning-a-database-on-or-off)
+- [2.12 Transaction logs from an API](#212-transaction-logs-from-an-api)
 
 ---
 
@@ -59,6 +60,7 @@ bash scripts/deploy.sh
 | SQL Server | B | `mssql/servers.conf` | nothing — just a read-only login |
 | MongoDB | B | `mongodb/servers.conf` | nothing — just a read-only user |
 | API endpoint | B | `blackbox/apis.conf` | nothing |
+| Transaction logs (an API over a log table) | B | `TXN_*` in `.env` | nothing |
 | Logs | — | (an agent on the machine) | Grafana Alloy |
 
 After either pattern, confirm at **Prometheus → Status → Targets** in your browser, or
@@ -609,6 +611,111 @@ bash scripts/deploy.sh
 > ```bash
 > grep '^COMPOSE_PROFILES=' .env
 > ```
+
+---
+
+## 2.12 Transaction logs from an API
+
+For an API that returns rows from a transaction-log table for a time window, like:
+
+```
+GET <url>?serviceId=…&from=2026-10-16T15:25:00Z&to=2026-10-16T15:30:00Z
+api-key: <key>
+→ { "status": true, "totalPages": 1, "data": [ { "transactionRef": "…",
+     "transactionTimeStamp": "…", "service": "…", "channel": "…",
+     "contentProviderName": "…", "operationSuccessful": true,
+     "contentProviderResponseTime": 2905, … } ] }
+```
+
+The result is the **💳 Transactions** wall (`/d/wall-transactions`): volume, success
+rate, failures, provider and Coure response times, failures by client, and the latest
+failed transactions.
+
+### How it works — and why Grafana doesn't call the API
+
+A small poller (`txn-poller`, the script `transactions/txn_poller.py`) calls the API
+**once a minute** for the minute that just ended and writes what it gets to two places:
+
+| Where | What | Used for |
+|---|---|---|
+| **Prometheus** | Counts by service, channel, provider and success/failure, plus response-time histograms | Every number and graph on the wall, and the alerts. Fast at any time range. |
+| **Loki** | Each transaction as one JSON record (phone number masked) | The "latest failed" list, failures by client, looking up a `transactionRef` |
+
+So the API is called once a minute **however many screens show the wall**, and changing
+the time range or a filter never touches it. Grafana's **time picker** sets the period
+of every number on the wall; the **Service / Channel / Provider** dropdowns fill
+themselves from the data.
+
+Each poll re-reads the last 2 minutes (`TXN_OVERLAP`) to catch rows written late, and
+skips any `transactionRef` it has already counted, so nothing is counted twice. If the
+API is down, the next successful poll catches up (up to `TXN_MAX_BACKFILL`, 15 minutes).
+
+### Step 1 — Fill in the settings
+
+In `.env`, under **Transaction logs**:
+
+```bash
+TXN_API_URL=https://<host>/<path-to-the-logs-endpoint>
+TXN_API_KEY='the-key'          # single quotes if it has $ & or similar
+TXN_API_KEY_HEADER=api-key     # the header name the API expects
+TXN_SERVICE_IDS=               # empty = all services in one call; or id1,id2,id3
+TXN_ENV=prod
+```
+
+**Paging.** If the API splits a window into several pages (`totalPages` > 1), set
+`TXN_PAGE_PARAM` to the name of its page-number parameter (and `TXN_PAGE_SIZE_PARAM` /
+`TXN_PAGE_SIZE` if it takes a page size). Until you do, only page 1 is read, and the
+poller says so in its log.
+
+**Response times** are taken to be in milliseconds. If they are seconds, set
+`TXN_RESPONSE_TIME_UNIT=s`.
+
+### Step 2 — Turn it on
+
+Add `transactions` to `COMPOSE_PROFILES`, e.g. `COMPOSE_PROFILES=mssql,transactions`.
+
+### Step 3 — Apply and check
+
+```bash
+bash scripts/deploy.sh
+docker compose logs --tail 20 txn-poller
+```
+
+A healthy log line looks like:
+
+```
+2026-10-17T09:41:00Z service '(all)' 2026-10-17T09:38:30Z..2026-10-17T09:40:30Z: 412 new, 197 already counted
+```
+
+`bash scripts/smoke-test.sh` shows `PASS: Transaction feed`. Then open the
+**💳 Wall — Transactions** board. Numbers appear after the first poll; graphs fill in
+over the following minutes.
+
+### Alerts it adds
+
+| Alert | When |
+|---|---|
+| `TxnFeedFailing` | The poller can't read the API for 5 minutes — the wall is going stale |
+| `TxnFeedUnauthorized` | The API answered 401/403 — check `TXN_API_KEY` |
+| `TxnLowSuccessRate` | A service is below 95% successful over 15 minutes (at least 20 transactions) |
+| `TxnProviderSlow` | A content provider's p95 response time is over 5 s for 15 minutes |
+
+Thresholds are in `prometheus/rules/alerts.yml`, group `transactions`.
+
+### Good to know
+
+- **Labels are kept small on purpose.** Prometheus gets only service, service type,
+  channel, provider and success/failure. Client, phone number and transaction reference
+  are too varied to be metric labels (they would bloat Prometheus); they live in Loki,
+  where you can still count and filter by them. If a field turns out to have hundreds
+  of values, the poller groups the extras as `other` and warns in its log.
+- **Look up one transaction:** Grafana → **Explore** → Loki →
+  `{job="transactions"} |= "20261016152837-b4bb1c755291403a9"`.
+- **Ad-hoc analysis** of anything in the record, e.g. failures per client per hour:
+  `sum by(client) (count_over_time({job="transactions", result="failed"} | json client="clientName" [1h]))`.
+- **History:** metrics for `PROM_RETENTION_TIME` (30 days), records for Loki's 14 days.
+- After a long outage the catch-up is counted when it is read, so a graph can show a
+  short spike; the Loki records keep their real timestamps.
 
 ---
 

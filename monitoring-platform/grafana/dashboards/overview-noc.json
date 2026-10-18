@@ -1688,6 +1688,13 @@
       "url": "/d/wall-endpoints",
       "keepTime": true,
       "includeVars": true
+    },
+    {
+      "title": "\ud83d\udcb3 Wall \u2014 Transactions",
+      "type": "link",
+      "url": "/d/wall-transactions",
+      "keepTime": true,
+      "includeVars": true
     }
   ]
 }

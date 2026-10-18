@@ -80,6 +80,9 @@ bash scripts/render-api-config.sh
 # Render one exporter per MongoDB server + its scrape targets (holds passwords).
 bash scripts/render-mongodb-config.sh
 
+# Scrape target for the transaction-log poller (only when its profile is on).
+bash scripts/render-transactions-config.sh
+
 # Fetch dashboards (idempotent).
 bash scripts/fetch-dashboards.sh
 
@@ -106,7 +109,7 @@ docker compose up -d --remove-orphans
 # blackbox/snmp/sql_exporter/alertmanager config is silently never loaded.
 echo
 echo "Reloading services that read generated config files:"
-for svc in blackbox-exporter snmp-exporter mssql-exporter alertmanager; do
+for svc in blackbox-exporter snmp-exporter mssql-exporter alertmanager txn-poller; do
   if docker compose ps --services --filter status=running 2>/dev/null | grep -qx "$svc"; then
     docker compose restart "$svc" >/dev/null 2>&1 && echo "  restarted $svc"
   fi
