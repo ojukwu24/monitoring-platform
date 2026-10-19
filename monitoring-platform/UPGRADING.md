@@ -59,6 +59,13 @@ Reading the result:
 
 Check these when upgrading. Each says whether you need to do anything.
 
+### Transaction logs and the 💳 Transactions wall
+
+**Action: optional.** `deploy.sh` will ask you to add the new `PYTHON_VERSION` and
+`TXN_*` lines from `.env.example` to `.env` — copy them as they are. Nothing new runs
+until you add `transactions` to `COMPOSE_PROFILES`; see
+[2.12](docs/2-what-to-monitor.md#212-transaction-logs-from-an-api).
+
 ### Servers can show a **name** instead of an IP address
 
 **Action: optional.**

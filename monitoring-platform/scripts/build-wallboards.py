@@ -20,6 +20,7 @@ import os
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "grafana", "dashboards")
 DS = {"type": "prometheus", "uid": "prometheus"}
+LOKI = {"type": "loki", "uid": "loki"}
 MAX_HEIGHT = 22  # grid units; ~22 x 38px fits 1080p in kiosk mode
 AMBER = "#EAB839"
 
@@ -29,6 +30,7 @@ WALLS = [
     ("wall-k8s-cluster", "☸️ Wall — Kubernetes Cluster"),
     ("wall-k8s-workloads", "☸️ Wall — Kubernetes Workloads"),
     ("wall-endpoints", "🔌 Wall — APIs & Network"),
+    ("wall-transactions", "💳 Wall — Transactions"),
 ]
 
 
@@ -381,6 +383,78 @@ def endpoints():
     ]
 
 
+# Transactions come from scripts/../transactions/txn_poller.py: metrics in
+# Prometheus for the numbers, one Loki record per transaction for the details.
+# Every number follows the time picker ($__range), so "last 24 hours" on the
+# wall means the last 24 hours of transactions.
+TX = 'env=~"$env", service=~"$service", channel=~"$channel", provider=~"$provider"'
+TX_LOKI = '{job="transactions", %s' % TX
+
+
+def tx_stat(title, expr, unit, steps, decimals=None):
+    p = count_stat(title, expr, steps, unit)
+    p["fieldConfig"]["defaults"]["noValue"] = "—"
+    if decimals is not None:
+        p["fieldConfig"]["defaults"]["decimals"] = decimals
+    return p
+
+
+def tx_p95(by, rng, metric="txn_provider_response_seconds"):
+    return 'histogram_quantile(0.95, sum by(%s) (increase(%s_bucket{%s}[%s])))' % (
+        ", ".join(by + ["le"]), metric, TX, rng)
+
+
+def loki_bars(title, expr, legend, steps):
+    p = bars(title, expr, legend, "short", steps, 0)
+    p["datasource"] = LOKI
+    p["targets"] = [{"refId": "A", "datasource": LOKI, "expr": expr,
+                     "legendFormat": legend, "queryType": "instant"}]
+    return p
+
+
+def transactions():
+    total = 'sum(increase(txn_transactions_total{%s}[$__range]))' % TX
+    ok = 'sum(increase(txn_transactions_total{result="success", %s}[$__range]))' % TX
+    failed = 'sum(increase(txn_transactions_total{result="failed", %s}[$__range])) or vector(0)' % TX
+    rate_by = lambda by: ('100 * sum by(%s) (increase(txn_transactions_total{result="success", %s}[$__range]))'
+                          ' / sum by(%s) (increase(txn_transactions_total{%s}[$__range]))' % (by, TX, by, TX))
+    slow = _steps(("green", None), (AMBER, 3), ("red", 5))
+    recent = {"type": "logs", "title": "Latest failed transactions",
+              "datasource": LOKI,
+              "options": {"showTime": True, "wrapLogMessage": False, "sortOrder": "Descending",
+                          "enableLogDetails": True, "dedupStrategy": "none"},
+              "targets": [{"refId": "A", "datasource": LOKI, "maxLines": 50,
+                           "expr": TX_LOKI + ', result="failed"} | json | line_format '
+                                   '"{{.service}} · {{.channel}} · {{.provider}} · {{.clientName}} · '
+                                   'provider {{.contentProviderResponseTime}}ms · status {{.status}} · '
+                                   'ref {{.transactionRef}}"'}]}
+    return [
+        (tx_stat("Transactions", total, "short", _steps(("blue", None)), 0), 0, 0, 4, 3),
+        (tx_stat("Success rate", '100 * (%s) / (%s)' % (ok, total), "percent",
+                 _steps(("red", None), (AMBER, 95), ("green", 99)), 2), 4, 0, 4, 3),
+        (tx_stat("Failed", failed, "short", _steps(("green", None), ("red", 1)), 0), 8, 0, 4, 3),
+        (tx_stat("Provider p95", tx_p95([], "$__range"), "s", slow, 2), 12, 0, 4, 3),
+        (tx_stat("Coure p95", tx_p95([], "$__range", "txn_coure_response_seconds"), "s", slow, 2),
+         16, 0, 4, 3),
+        (updown("API feed", 'min(txn_poll_success{env=~"$env"})', "feed", "not configured"),
+         20, 0, 4, 3),
+        (trend("Transactions / min by result",
+               'sum by(result) (rate(txn_transactions_total{%s}[5m])) * 60' % TX, "{{result}}", "short"),
+         0, 3, 12, 7),
+        (trend("Provider response p95 by provider", tx_p95(["provider"], "5m"), "{{provider}}", "s"),
+         12, 3, 12, 7),
+        (bars("Success rate % by service", rate_by("service"), "{{service}}", "percent",
+              _steps(("red", None), (AMBER, 95), ("green", 99)), 0, 100), 0, 10, 8, 6),
+        (bars("Provider p95 by provider", tx_p95(["provider"], "$__range"), "{{provider}}", "s", slow, 0),
+         8, 10, 8, 6),
+        (loki_bars("Failures by client",
+                   'topk(10, sum by(client) (count_over_time(%s, result="failed"} '
+                   '| json client="clientName" [$__range])))' % TX_LOKI,
+                   "{{client}}", _steps((AMBER, None), ("red", 10))), 16, 10, 8, 6),
+        (recent, 0, 16, 24, 6),
+    ]
+
+
 # ------------------------------------------------------------------- assembly
 def env_var():
     return {"name": "env", "label": "Environment", "type": "query", "datasource": DS,
@@ -397,6 +471,14 @@ def cluster_var():
             "description": "kube-state-metrics target (its name: from targets/kubernetes.yml)"}
 
 
+def tx_var(name, label, metric_label):
+    return {"name": name, "label": label, "type": "query", "datasource": DS,
+            "query": 'label_values(txn_transactions_total{env=~"$env"}, %s)' % metric_label,
+            "refresh": 2, "includeAll": True, "multi": True, "allValue": ".*",
+            "current": {"text": "All", "value": "$__all", "selected": True}, "options": [],
+            "sort": 1}
+
+
 def links():
     out = [{"title": "🚦 NOC Overview", "type": "link", "url": "/d/noc-overview",
             "keepTime": True, "includeVars": True}]
@@ -408,7 +490,7 @@ def links():
 def dashboard(uid, title, layout, variables):
     panels = []
     for i, (p, x, y, w, h) in enumerate(layout, start=1):
-        p = dict(p, id=i, datasource=DS, gridPos={"x": x, "y": y, "w": w, "h": h})
+        p = dict(p, id=i, datasource=p.get("datasource", DS), gridPos={"x": x, "y": y, "w": w, "h": h})
         panels.append(p)
     height = max(p["gridPos"]["y"] + p["gridPos"]["h"] for p in panels)
     assert height <= MAX_HEIGHT, "%s is %d units tall (max %d)" % (uid, height, MAX_HEIGHT)
@@ -470,7 +552,10 @@ def main():
                 "wall-databases": (databases, [env_var()]),
                 "wall-k8s-cluster": (k8s_cluster, [env_var(), cluster_var()]),
                 "wall-k8s-workloads": (k8s_workloads, [env_var(), cluster_var()]),
-                "wall-endpoints": (endpoints, [env_var()])}
+                "wall-endpoints": (endpoints, [env_var()]),
+                "wall-transactions": (transactions, [env_var(), tx_var("service", "Service", "service"),
+                                                     tx_var("channel", "Channel", "channel"),
+                                                     tx_var("provider", "Provider", "provider")])}
     for uid, title in WALLS:
         build, variables = builders[uid]
         path = os.path.join(OUT, uid + ".json")

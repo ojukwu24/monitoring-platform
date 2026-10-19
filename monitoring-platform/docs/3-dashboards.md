@@ -71,9 +71,12 @@ kiosk mode **with no scrolling**, and has the same Environment selector.
 | ☸️ **Kubernetes Cluster** | `/d/wall-k8s-cluster` | Node readiness and pressure, pods by phase, CPU/memory requested vs allocatable per node, cluster alerts |
 | ☸️ **Kubernetes Workloads** | `/d/wall-k8s-workloads` | Degraded deployments / StatefulSets / DaemonSets, failed jobs, pods not running, top restarting containers, pods per namespace |
 | 🔌 **APIs & Network** | `/d/wall-endpoints` | API and website UP/DOWN, response times, TLS certificate days left, SNMP devices |
+| 💳 **Transactions** | `/d/wall-transactions` | Transaction volume, success rate, failures, provider/Coure response times, failures by client, latest failed transactions ([2.12](2-what-to-monitor.md#212-transaction-logs-from-an-api)) |
 
 The Kubernetes boards also have a **Cluster** selector (the `name:` you gave the
-kube-state-metrics target), so two screens can show two different clusters.
+kube-state-metrics target), so two screens can show two different clusters. The Transactions board has
+**Service**, **Channel** and **Provider** selectors, and its numbers cover the time
+range picked at the top right (default: the last hour).
 
 **Pin a screen to one environment** with `var-env` in the URL — kiosk mode hides the
 dropdowns, so the URL is how you switch a TV:

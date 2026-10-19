@@ -72,6 +72,40 @@ services:
     ports:
       - "9399:9399"
 
+  # Transaction logs: polls the transaction-log API, serves metrics for Prometheus
+  # on :9488 and pushes each transaction to Loki. Plain Python image running the
+  # mounted script — nothing to build. Settings: "Transaction logs" in .env.
+  # Only starts when COMPOSE_PROFILES includes `transactions`.
+  txn-poller:
+    image: python:${PYTHON_VERSION}
+    restart: unless-stopped
+    profiles: [transactions]
+    command: ["python", "-u", "/app/txn_poller.py"]
+    environment:
+      TXN_API_URL: ${TXN_API_URL}
+      TXN_API_KEY: ${TXN_API_KEY}
+      TXN_API_KEY_HEADER: ${TXN_API_KEY_HEADER}
+      TXN_SERVICE_IDS: ${TXN_SERVICE_IDS}
+      TXN_ENV: ${TXN_ENV}
+      TXN_POLL_INTERVAL: ${TXN_POLL_INTERVAL}
+      TXN_LAG: ${TXN_LAG}
+      TXN_OVERLAP: ${TXN_OVERLAP}
+      TXN_MAX_BACKFILL: ${TXN_MAX_BACKFILL}
+      TXN_PAGE_PARAM: ${TXN_PAGE_PARAM}
+      TXN_PAGE_SIZE_PARAM: ${TXN_PAGE_SIZE_PARAM}
+      TXN_PAGE_SIZE: ${TXN_PAGE_SIZE}
+      TXN_FIRST_PAGE: ${TXN_FIRST_PAGE}
+      TXN_RESPONSE_TIME_UNIT: ${TXN_RESPONSE_TIME_UNIT}
+      TXN_MASK_PHONE: ${TXN_MASK_PHONE}
+      TXN_INSECURE: ${TXN_INSECURE}
+    volumes:
+      - ./transactions:/app:ro
+      - txn_data:/data
+    ports:
+      - "9488:9488"
+    depends_on:
+      - loki
+
   snmp-exporter:
     image: prom/snmp-exporter:${SNMP_EXPORTER_VERSION}
     restart: unless-stopped
@@ -92,3 +126,4 @@ volumes:
   prometheus_data:
   loki_data:
   grafana_data:
+  txn_data:

@@ -37,6 +37,7 @@ time only**, so an update can never overwrite your values.
 | `mssql/sql_exporter.yml` | `mssql/servers.conf` (or `MSSQL_DSN`) |
 | `blackbox/blackbox.yml` | `blackbox/blackbox.base.yml` + `blackbox/apis.conf` |
 | `prometheus/targets/api.yml` | `blackbox/apis.conf` |
+| `prometheus/targets/transactions.yml` | `TXN_ENV` and `COMPOSE_PROFILES` in `.env` |
 | `prometheus/targets/mongodb.yml` | `mongodb/servers.conf` |
 | `docker-compose.override.yml` | `mongodb/servers.conf` (one exporter per server) |
 | `alertmanager/alertmanager.yml` | `alertmanager/alertmanager.yml.tmpl` + `.env` |
@@ -52,6 +53,7 @@ Edit the source on the right and run `bash scripts/deploy.sh`.
 | `prometheus/rules/alerts.yml` | The alert rules |
 | `alertmanager/alertmanager.yml.tmpl` | Alert routing and receivers |
 | `grafana/dashboards/*.json` | The dashboards |
+| `transactions/txn_poller.py` | The transaction-log poller ([2.12](2-what-to-monitor.md#212-transaction-logs-from-an-api)) |
 
 ### Scripts
 
@@ -79,6 +81,7 @@ Edit the source on the right and run `bash scripts/deploy.sh`.
 | 9115 | blackbox-exporter (internal) |
 | 9116 | snmp-exporter (internal) |
 | 9399 | mssql-exporter (internal) |
+| 9488 | txn-poller — transaction-log metrics (internal) |
 | 9216+ | mongodb-exporter, one port per server (internal) |
 
 **On the machines being watched** (the VM must be able to reach these):

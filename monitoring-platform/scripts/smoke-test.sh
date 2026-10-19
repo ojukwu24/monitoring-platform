@@ -67,6 +67,7 @@ check "Kubernetes (KSM)" 'up{job="kube-state-metrics"}'
 check "Network (SNMP)"   'up{job="snmp"}'
 check "Websites"         'probe_success{job="blackbox"}'
 check "API endpoints"    'probe_success{job="api"}' 'api'
+check "Transaction feed" 'txn_poll_success{job="transactions"}'
 
 # A target whose SCRAPE fails produces no probe_success at all, so it would silently
 # vanish from the check above. `up` covers that case.
@@ -86,6 +87,14 @@ if printf '%s' "$apicodes" | grep -q '"value"'; then
   printf '%s' "$apicodes" | sed 's/},{"metric"/}\n{"metric"/g' | grep '"metric"' \
     | sed -n 's/.*"api":"\([^"]*\)".*/        - \1/p'
   fail=1
+fi
+
+# Transaction feed: name the reason when the poller can't read the API.
+txnerr=$(curl -sG "${PROM}/api/v1/query"   --data-urlencode 'query=sum by(reason) (increase(txn_poll_errors_total[10m])) > 0' 2>/dev/null)
+if printf '%s' "$txnerr" | grep -q '"value"'; then
+  echo "  NOTE: the transaction poller failed to read the API in the last 10 minutes:"
+  printf '%s' "$txnerr" | grep -oE '"reason":"[^"]*"' | cut -d'"' -f4 | sed 's/^/        - /'
+  echo "        (http_401 / http_403 = check TXN_API_KEY; details: docker compose logs txn-poller)"
 fi
 
 echo
